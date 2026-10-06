@@ -1,0 +1,7 @@
+{
+  "name": "Animaxia",
+  "description": "Platformă full-stack modernă de streaming anime și animații cu bază de date locală, video player avansat și administrare completă.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
