@@ -5,6 +5,9 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+export type ContentCategory = 'movie' | 'series' | 'anime' | 'sport' | 'mined';
+export type StreamType = 'mp4' | 'hls' | 'dash' | 'youtube' | 'vimeo' | 'twitch' | 'iframe' | 'embed';
+
 export interface Episode {
   id: string;
   seasonNumber: number;
@@ -16,6 +19,7 @@ export interface Episode {
   duration: string;
   durationSeconds: number;
   videoUrl: string;
+  streamType?: StreamType;
   subtitlesUrl?: string;
   introStart?: number;
   introEnd?: number;
@@ -31,15 +35,23 @@ export interface Anime {
   coverImage: string;
   bannerImage: string;
   genres: string[];
+  category: ContentCategory;
+  streamType?: StreamType;
+  videoUrl?: string;
   rating: number;
   totalRatings: number;
   releaseYear: number;
-  season: 'Iarnă' | 'Primăvară' | 'Vară' | 'Toamnă';
+  season?: 'Iarnă' | 'Primăvară' | 'Vară' | 'Toamnă';
   status: 'În difuzare' | 'Finalizat' | 'În curând';
   studio: string;
   ageRating: string;
   featured: boolean;
   trendingRank?: number;
+  franchise?: string;
+  collection?: string;
+  actors?: string[];
+  directors?: string[];
+  sourceOrigin?: string; // 'local' | 'youtube' | 'miner' | 'embed' | 'tmdb' | 'jikan'
   totalEpisodes: number;
   episodes: Episode[];
   createdAt: string;
@@ -78,6 +90,19 @@ export interface CommentItem {
   createdAt: string;
 }
 
+export interface SocialActivityItem {
+  id: string;
+  type: 'watch' | 'comment' | 'rate' | 'add';
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  animeId: string;
+  animeTitle: string;
+  text?: string;
+  score?: number;
+  createdAt: string;
+}
+
 export interface UserRating {
   userId: string;
   animeId: string;
@@ -100,6 +125,7 @@ export interface DatabaseSchema {
   watchHistory: WatchHistoryItem[];
   watchlist: WatchlistItem[];
   comments: CommentItem[];
+  socialActivity: SocialActivityItem[];
   userRatings: UserRating[];
   users: UserProfile[];
   settings: {
@@ -110,275 +136,237 @@ export interface DatabaseSchema {
   };
 }
 
-// Sample video streams (high quality, reliable public domain / open-film / CDN video streams)
 const SAMPLE_VIDEOS = {
-  action: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-  fantasy: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-  sciFi: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-  drama: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
-  adventure: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-  chill: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
+  hlsDemo: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+  sintel: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+  bigBuckBunny: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+  tearsOfSteel: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+  elephantsDream: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+  forBiggerBlazes: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+  weAreGoingOnBullrun: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
+  youtubeSample: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
 };
 
 const SEED_DATA: DatabaseSchema = {
   animes: [
     {
-      id: 'shingeki-no-kyojin',
-      title: 'Atacul Titanilor',
-      romajiTitle: 'Shingeki no Kyojin',
-      englishTitle: 'Attack on Titan',
-      description: 'După ce orașul său natal este distrus și mama sa ucisă de titani înspăimântători, tânărul Eren Yeager jură să curețe pământul de giganții care au adus omenirea în pragul dispariției.',
+      id: 'animaxia-hls-demo',
+      title: 'Animaxia HLS Demo',
+      romajiTitle: 'Animaxia Sutoriimu',
+      englishTitle: 'Animaxia Adaptive Streaming Demo',
+      description: 'Stream de test adaptiv de înaltă performanță HLS cu multiple bitrate-uri și comutare automată de rezoluție (1080p, 720p, 480p).',
       coverImage: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80',
       bannerImage: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1600&auto=format&fit=crop&q=80',
-      genres: ['Acțiune', 'Fantezie Întunecată', 'Mister', 'Dramă'],
+      genres: ['Streaming', 'Demo', 'Animation'],
+      category: 'movie',
+      streamType: 'hls',
+      videoUrl: SAMPLE_VIDEOS.hlsDemo,
+      rating: 8.0,
+      totalRatings: 342,
+      releaseYear: 2025,
+      season: 'Iarnă',
+      status: 'Finalizat',
+      studio: 'Animaxia Engine',
+      ageRating: 'Toate vârstele',
+      featured: true,
+      trendingRank: 1,
+      sourceOrigin: 'demo',
+      totalEpisodes: 1,
+      createdAt: new Date(Date.now() - 720000).toISOString(),
+      episodes: [
+        {
+          id: 'hls-demo-ep1',
+          seasonNumber: 1,
+          episodeNumber: 1,
+          title: 'HLS Master Stream (Adaptive M3U8)',
+          description: 'Stream adaptiv HLS optimizat pentru orice dispozitiv.',
+          thumbnail: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&auto=format&fit=crop&q=80',
+          duration: '10m',
+          durationSeconds: 600,
+          videoUrl: SAMPLE_VIDEOS.hlsDemo,
+          streamType: 'hls',
+          introStart: 0,
+          introEnd: 15,
+        },
+      ],
+    },
+    {
+      id: 'sintel',
+      title: 'Sintel',
+      romajiTitle: 'Sinteru',
+      englishTitle: 'Sintel: The Dragon Search',
+      description: 'A lonely young woman travels far from home searching for Scales, the baby dragon she once nursed back to health, in this epic Blender Foundation fantasy.',
+      coverImage: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80',
+      bannerImage: 'https://images.unsplash.com/photo-1519638399535-1b036603ac77?w=1600&auto=format&fit=crop&q=80',
+      genres: ['Fantasy', 'Adventure', 'Animation'],
+      category: 'movie',
+      streamType: 'mp4',
+      videoUrl: SAMPLE_VIDEOS.sintel,
+      rating: 7.5,
+      totalRatings: 1820,
+      releaseYear: 2010,
+      season: 'Toamnă',
+      status: 'Finalizat',
+      studio: 'Blender Foundation',
+      ageRating: '13+',
+      featured: true,
+      trendingRank: 2,
+      sourceOrigin: 'demo',
+      franchise: 'Open Movies',
+      totalEpisodes: 1,
+      createdAt: new Date(Date.now() - 720000).toISOString(),
+      episodes: [
+        {
+          id: 'sintel-film',
+          seasonNumber: 1,
+          episodeNumber: 1,
+          title: 'Filmul Complet HD',
+          description: 'Călătoria tinerei Sintel în ținuturile înghețate.',
+          thumbnail: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&auto=format&fit=crop&q=80',
+          duration: '15m',
+          durationSeconds: 900,
+          videoUrl: SAMPLE_VIDEOS.sintel,
+          streamType: 'mp4',
+          introStart: 0,
+          introEnd: 40,
+        },
+      ],
+    },
+    {
+      id: 'big-buck-bunny',
+      title: 'Big Buck Bunny',
+      romajiTitle: 'Dai Usagi',
+      englishTitle: 'Big Buck Bunny',
+      description: 'Un iepure gigantic și blând este hărțuit de trei rozătoare răutăcioase din pădure, până când decide să își ia revanșa într-un mod spectaculos.',
+      coverImage: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=600&auto=format&fit=crop&q=80',
+      bannerImage: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1600&auto=format&fit=crop&q=80',
+      genres: ['Comedy', 'Family', 'Animation'],
+      category: 'movie',
+      streamType: 'mp4',
+      videoUrl: SAMPLE_VIDEOS.bigBuckBunny,
+      rating: 7.4,
+      totalRatings: 940,
+      releaseYear: 2008,
+      season: 'Primăvară',
+      status: 'Finalizat',
+      studio: 'Blender Foundation',
+      ageRating: 'Toate vârstele',
+      featured: false,
+      trendingRank: 3,
+      sourceOrigin: 'demo',
+      franchise: 'Open Movies',
+      totalEpisodes: 1,
+      createdAt: new Date(Date.now() - 720000).toISOString(),
+      episodes: [
+        {
+          id: 'bbb-film',
+          seasonNumber: 1,
+          episodeNumber: 1,
+          title: 'Filmul Complet HD',
+          description: 'Aventura lui Big Buck Bunny în pădurea fermecată.',
+          thumbnail: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=400&auto=format&fit=crop&q=80',
+          duration: '10m',
+          durationSeconds: 600,
+          videoUrl: SAMPLE_VIDEOS.bigBuckBunny,
+          streamType: 'mp4',
+          introStart: 0,
+          introEnd: 30,
+        },
+      ],
+    },
+    {
+      id: 'attack-on-titan',
+      title: 'Attack on Titan',
+      romajiTitle: 'Shingeki no Kyojin',
+      englishTitle: 'Attack on Titan',
+      description: 'Omenirea trăiește baricadată în spatele a trei ziduri uriașe pentru a scăpa de titani canibali. Eren Yeager jură să îi extermine pe toți.',
+      coverImage: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&auto=format&fit=crop&q=80',
+      bannerImage: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1600&auto=format&fit=crop&q=80',
+      genres: ['Action', 'Fantasy', 'Mystery', 'Drama'],
+      category: 'anime',
+      streamType: 'mp4',
+      videoUrl: SAMPLE_VIDEOS.tearsOfSteel,
       rating: 9.8,
-      totalRatings: 14200,
+      totalRatings: 15400,
       releaseYear: 2023,
       season: 'Toamnă',
       status: 'Finalizat',
       studio: 'MAPPA / Wit Studio',
       ageRating: '16+',
       featured: true,
-      trendingRank: 1,
-      totalEpisodes: 4,
+      trendingRank: 4,
+      franchise: 'Attack on Titan',
+      totalEpisodes: 3,
       createdAt: new Date().toISOString(),
       episodes: [
         {
-          id: 'snk-s1-ep1',
+          id: 'aot-ep1',
           seasonNumber: 1,
           episodeNumber: 1,
           title: 'Către tine, peste 2000 de ani',
-          romajiTitle: 'Ni-sen Nen-go no Kimi e',
-          description: 'Omenirea a trăit timp de un secol protejată de ziduri colosale. Dar o zi obișnuită este spulberată de apariția Titanului Colosal.',
-          thumbnail: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&auto=format&fit=crop&q=80',
-          duration: '24m',
-          durationSeconds: 1440,
-          videoUrl: SAMPLE_VIDEOS.sciFi,
-          introStart: 90,
-          introEnd: 175,
-        },
-        {
-          id: 'snk-s1-ep2',
-          seasonNumber: 1,
-          episodeNumber: 2,
-          title: 'Acea zi: Căderea Shiganshinei',
-          romajiTitle: 'Sono Hi',
-          description: 'Refugiații fug spre Zidul Rose în timp ce Titanul Blindat pătrunde prin poarta fortificată.',
-          thumbnail: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&auto=format&fit=crop&q=80',
-          duration: '23m',
-          durationSeconds: 1380,
-          videoUrl: SAMPLE_VIDEOS.action,
-          introStart: 70,
-          introEnd: 155,
-        },
-        {
-          id: 'snk-s1-ep3',
-          seasonNumber: 1,
-          episodeNumber: 3,
-          title: 'O licărire palidă în mijlocul disperării',
-          romajiTitle: 'Zetsubou no Naka de Nibuku Hikaru',
-          description: 'Eren, Mikasa și Armin se înrolează în Corpul de Cadeți 104 pentru antrenamente de supraviețuire.',
+          description: 'Căderea primului zid și apariția titanului colosal.',
           thumbnail: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400&auto=format&fit=crop&q=80',
           duration: '24m',
           durationSeconds: 1440,
-          videoUrl: SAMPLE_VIDEOS.drama,
-          introStart: 85,
-          introEnd: 170,
-        },
-        {
-          id: 'snk-s1-ep4',
-          seasonNumber: 1,
-          episodeNumber: 4,
-          title: 'Noaptea ceremoniei de absolvire',
-          romajiTitle: 'Kaisan no Yoru',
-          description: 'Cadeții își aleg regimentele, dar o nouă surpriză terifiantă zguduie districtul Trost.',
-          thumbnail: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=400&auto=format&fit=crop&q=80',
-          duration: '24m',
-          durationSeconds: 1440,
-          videoUrl: SAMPLE_VIDEOS.adventure,
+          videoUrl: SAMPLE_VIDEOS.tearsOfSteel,
+          streamType: 'mp4',
           introStart: 60,
           introEnd: 145,
+        },
+        {
+          id: 'aot-ep2',
+          seasonNumber: 1,
+          episodeNumber: 2,
+          title: 'Căderea Shiganshinei',
+          description: 'Refugiații ajung la Zidul Rose.',
+          thumbnail: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&auto=format&fit=crop&q=80',
+          duration: '23m',
+          durationSeconds: 1380,
+          videoUrl: SAMPLE_VIDEOS.sintel,
+          streamType: 'mp4',
+          introStart: 70,
+          introEnd: 155,
         },
       ],
     },
     {
-      id: 'kimetsu-no-yaiba',
-      title: 'Vânătorul de Demoni',
+      id: 'demon-slayer',
+      title: 'Demon Slayer',
       romajiTitle: 'Kimetsu no Yaiba',
-      englishTitle: 'Demon Slayer',
-      description: 'Tanjiro Kamado pornește într-o călătorie periculoasă pentru a-și răzbuna familia masacrată de un demon și pentru a găsi un leac pentru sora sa transformată, Nezuko.',
-      coverImage: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&auto=format&fit=crop&q=80',
-      bannerImage: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=1600&auto=format&fit=crop&q=80',
-      genres: ['Acțiune', 'Supranatural', 'Fantezie', 'Istoric'],
+      englishTitle: 'Demon Slayer: Kimetsu no Yaiba',
+      description: 'Tanjiro pornește în căutarea unui leac pentru sora sa transformată în demon și se antrenează ca vânător.',
+      coverImage: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&auto=format&fit=crop&q=80',
+      bannerImage: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&auto=format&fit=crop&q=80',
+      genres: ['Action', 'Supernatural', 'Historical'],
+      category: 'anime',
+      streamType: 'mp4',
+      videoUrl: SAMPLE_VIDEOS.bigBuckBunny,
       rating: 9.6,
-      totalRatings: 11890,
+      totalRatings: 12300,
       releaseYear: 2024,
       season: 'Primăvară',
       status: 'În difuzare',
       studio: 'ufotable',
       ageRating: '16+',
       featured: true,
-      trendingRank: 2,
-      totalEpisodes: 3,
-      createdAt: new Date().toISOString(),
-      episodes: [
-        {
-          id: 'kny-s1-ep1',
-          seasonNumber: 1,
-          episodeNumber: 1,
-          title: 'Cruzime',
-          romajiTitle: 'Zankoku',
-          description: 'O călătorie obișnuită până în sat pentru a vinde cărbune se transformă într-o tragedie fără margini.',
-          thumbnail: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400&auto=format&fit=crop&q=80',
-          duration: '24m',
-          durationSeconds: 1440,
-          videoUrl: SAMPLE_VIDEOS.action,
-          introStart: 75,
-          introEnd: 160,
-        },
-        {
-          id: 'kny-s1-ep2',
-          seasonNumber: 1,
-          episodeNumber: 2,
-          title: 'Antrenorul Sakonji Urokodaki',
-          romajiTitle: 'Ikuseishu Urokodaki Sakonji',
-          description: 'Giyu îl trimite pe Tanjiro la Muntele Sagiri pentru a învăța respirația apei.',
-          thumbnail: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&auto=format&fit=crop&q=80',
-          duration: '23m',
-          durationSeconds: 1380,
-          videoUrl: SAMPLE_VIDEOS.drama,
-          introStart: 70,
-          introEnd: 155,
-        },
-        {
-          id: 'kny-s1-ep3',
-          seasonNumber: 1,
-          episodeNumber: 3,
-          title: 'Sabito și Makomo',
-          romajiTitle: 'Sabito to Makomo',
-          description: 'Tanjiro înfruntă stânca uriașă cu ajutorul a doi mentori misterioși.',
-          thumbnail: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=400&auto=format&fit=crop&q=80',
-          duration: '24m',
-          durationSeconds: 1440,
-          videoUrl: SAMPLE_VIDEOS.sciFi,
-          introStart: 65,
-          introEnd: 150,
-        },
-      ],
-    },
-    {
-      id: 'frieren-beyond-journeys-end',
-      title: 'Frieren: Dincolo de Sfârșitul Călătoriei',
-      romajiTitle: 'Sousou no Frieren',
-      englishTitle: "Frieren: Beyond Journey's End",
-      description: 'Vrăjitoarea elfă Frieren și tovarășii ei au învins Regele Demon. Dar în timp ce viețile oamenilor sunt scurte, Frieren trăiește milenii întregi și începe o nouă călătorie pentru a înțelege sufletul omenesc.',
-      coverImage: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80',
-      bannerImage: 'https://images.unsplash.com/photo-1519638399535-1b036603ac77?w=1600&auto=format&fit=crop&q=80',
-      genres: ['Fantezie', 'Aventură', 'Dramă', 'Filosofic'],
-      rating: 9.9,
-      totalRatings: 18450,
-      releaseYear: 2024,
-      season: 'Iarnă',
-      status: 'Finalizat',
-      studio: 'Madhouse',
-      ageRating: '13+',
-      featured: true,
-      trendingRank: 3,
-      totalEpisodes: 3,
-      createdAt: new Date().toISOString(),
-      episodes: [
-        {
-          id: 'frieren-ep1',
-          seasonNumber: 1,
-          episodeNumber: 1,
-          title: 'Sfârșitul aventurii',
-          romajiTitle: 'Bouken no Owari',
-          description: 'După 10 ani de bătălii, echipa eroului Himmel se întoarce triumfătoare în capitală.',
-          thumbnail: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&auto=format&fit=crop&q=80',
-          duration: '24m',
-          durationSeconds: 1440,
-          videoUrl: SAMPLE_VIDEOS.fantasy,
-          introStart: 80,
-          introEnd: 165,
-        },
-        {
-          id: 'frieren-ep2',
-          seasonNumber: 1,
-          episodeNumber: 2,
-          title: 'Nu a fost chiar o magie necesară',
-          romajiTitle: 'Betsu ni Mahou de Naku temo',
-          description: 'Frieren o acceptă pe tânăra Fern ca ucenică și își continuă periplul prin ținuturile nordice.',
-          thumbnail: 'https://images.unsplash.com/photo-1519638399535-1b036603ac77?w=400&auto=format&fit=crop&q=80',
-          duration: '24m',
-          durationSeconds: 1440,
-          videoUrl: SAMPLE_VIDEOS.chill,
-          introStart: 70,
-          introEnd: 155,
-        },
-        {
-          id: 'frieren-ep3',
-          seasonNumber: 1,
-          episodeNumber: 3,
-          title: 'Magie pentru uciderea demonilor',
-          romajiTitle: 'Zoltraak',
-          description: 'Frieren investighează pecetea lui Qual, Demonul Corupției, învins cu decenii în urmă.',
-          thumbnail: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&auto=format&fit=crop&q=80',
-          duration: '24m',
-          durationSeconds: 1440,
-          videoUrl: SAMPLE_VIDEOS.sciFi,
-          introStart: 75,
-          introEnd: 160,
-        },
-      ],
-    },
-    {
-      id: 'cyberpunk-edgerunners',
-      title: 'Cyberpunk: Edgerunners',
-      romajiTitle: 'Cyberpunk: Edgerunners',
-      englishTitle: 'Cyberpunk: Edgerunners',
-      description: 'Într-o metropolă coruptă de tehnologie și modificări corporale, un tânăr de pe stradă decide să devină un Edgerunner — un mercenar haiduc gata să riște totul pentru un vis.',
-      coverImage: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&auto=format&fit=crop&q=80',
-      bannerImage: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1600&auto=format&fit=crop&q=80',
-      genres: ['Cyberpunk', 'Acțiune', 'Sci-Fi', 'Tragedie'],
-      rating: 9.3,
-      totalRatings: 9200,
-      releaseYear: 2022,
-      season: 'Vară',
-      status: 'Finalizat',
-      studio: 'Studio Trigger',
-      ageRating: '18+',
-      featured: true,
-      trendingRank: 4,
+      trendingRank: 5,
+      franchise: 'Demon Slayer',
       totalEpisodes: 2,
       createdAt: new Date().toISOString(),
       episodes: [
         {
-          id: 'cbr-ep1',
+          id: 'kny-ep1',
           seasonNumber: 1,
           episodeNumber: 1,
-          title: 'Let You Down',
-          romajiTitle: 'Let You Down',
-          description: 'David Martinez încearcă să supraviețuiască la prestigioasa Academie Arasaka în ciuda sărăciei sale extreme.',
+          title: 'Cruzime',
+          description: 'Familia lui Tanjiro este atacată.',
           thumbnail: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=400&auto=format&fit=crop&q=80',
-          duration: '25m',
-          durationSeconds: 1500,
-          videoUrl: SAMPLE_VIDEOS.sciFi,
-          introStart: 60,
-          introEnd: 145,
-        },
-        {
-          id: 'cbr-ep2',
-          seasonNumber: 1,
-          episodeNumber: 2,
-          title: 'Like a Boy',
-          romajiTitle: 'Like a Boy',
-          description: 'David își instalează implantul militar Sandevistan și o întâlnește în metrou pe misterioasa Lucy.',
-          thumbnail: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&auto=format&fit=crop&q=80',
           duration: '24m',
           durationSeconds: 1440,
-          videoUrl: SAMPLE_VIDEOS.action,
-          introStart: 55,
-          introEnd: 140,
+          videoUrl: SAMPLE_VIDEOS.bigBuckBunny,
+          streamType: 'mp4',
+          introStart: 70,
+          introEnd: 155,
         },
       ],
     },
@@ -387,19 +375,23 @@ const SEED_DATA: DatabaseSchema = {
       title: 'Jujutsu Kaisen',
       romajiTitle: 'Jujutsu Kaisen',
       englishTitle: 'Jujutsu Kaisen',
-      description: 'Yuji Itadori înghite un deget blestemat legendar aparținând lui Ryomen Sukuna, regele blestemelor, devenind gazda acestuia și intrând în lumea secretă a vrăjitorilor Jujutsu.',
-      coverImage: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=600&auto=format&fit=crop&q=80',
+      description: 'Yuji Itadori înghite un deget blestemat legendar aparținând lui Sukuna și intră în lumea secretă a vrăjitorilor Jujutsu.',
+      coverImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
       bannerImage: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1600&auto=format&fit=crop&q=80',
-      genres: ['Acțiune', 'Supranatural', 'Shounen', 'Mister'],
+      genres: ['Action', 'Supernatural', 'Shounen'],
+      category: 'anime',
+      streamType: 'mp4',
+      videoUrl: SAMPLE_VIDEOS.forBiggerBlazes,
       rating: 9.5,
-      totalRatings: 13100,
+      totalRatings: 11200,
       releaseYear: 2023,
       season: 'Vară',
       status: 'În difuzare',
       studio: 'MAPPA',
       ageRating: '16+',
       featured: false,
-      trendingRank: 5,
+      trendingRank: 6,
+      franchise: 'Jujutsu Kaisen',
       totalEpisodes: 2,
       createdAt: new Date().toISOString(),
       episodes: [
@@ -408,167 +400,97 @@ const SEED_DATA: DatabaseSchema = {
           seasonNumber: 1,
           episodeNumber: 1,
           title: 'Ryomen Sukuna',
-          romajiTitle: 'Ryomen Sukuna',
-          description: 'Clubul de cercetări oculte desigilează un talisman periculos în miezul nopții.',
-          thumbnail: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=400&auto=format&fit=crop&q=80',
+          description: 'Clubul de ocultism desigilează degetul lui Sukuna.',
+          thumbnail: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&auto=format&fit=crop&q=80',
           duration: '24m',
           durationSeconds: 1440,
-          videoUrl: SAMPLE_VIDEOS.adventure,
-          introStart: 70,
-          introEnd: 155,
-        },
-        {
-          id: 'jjk-ep2',
-          seasonNumber: 1,
-          episodeNumber: 2,
-          title: 'Pentru mine însumi',
-          romajiTitle: 'Jibun no Tameni',
-          description: 'Gojo Satoru îi prezintă lui Yuji cele două opțiuni: execuție imediată sau colectarea tuturor degetelor.',
-          thumbnail: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&auto=format&fit=crop&q=80',
-          duration: '23m',
-          durationSeconds: 1380,
-          videoUrl: SAMPLE_VIDEOS.action,
+          videoUrl: SAMPLE_VIDEOS.forBiggerBlazes,
+          streamType: 'mp4',
           introStart: 65,
           introEnd: 150,
         },
       ],
     },
     {
-      id: 'solo-leveling',
-      title: 'Solo Leveling',
-      romajiTitle: 'Ore dake Level Up na Ken',
-      englishTitle: 'Solo Leveling',
-      description: 'Într-o lume unde porți magice leagă pământul de temnițe cu monștri, cel mai slab vânător al omenirii, Sung Jinwoo, primește o a doua șansă și o interfață misterioasă care îi permite doar lui să crească în nivel.',
-      coverImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
+      id: 'tears-of-steel',
+      title: 'Tears of Steel',
+      romajiTitle: 'Hagane no Namida',
+      englishTitle: 'Tears of Steel',
+      description: 'Într-un viitor distopic la Amsterdam, un grup de soldați și oameni de știință încearcă să salveze lumea de roboți distrugători printr-un ritual de memorie.',
+      coverImage: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=80',
       bannerImage: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1600&auto=format&fit=crop&q=80',
-      genres: ['Acțiune', 'Fantezie', 'RPG', 'Aventură'],
-      rating: 9.4,
-      totalRatings: 10400,
-      releaseYear: 2024,
-      season: 'Iarnă',
-      status: 'În difuzare',
-      studio: 'A-1 Pictures',
-      ageRating: '16+',
-      featured: false,
-      trendingRank: 6,
-      totalEpisodes: 2,
-      createdAt: new Date().toISOString(),
-      episodes: [
-        {
-          id: 'sl-ep1',
-          seasonNumber: 1,
-          episodeNumber: 1,
-          title: 'Sunt obișnuit cu asta',
-          romajiTitle: 'I\'m Used to It',
-          description: 'O expediție de rutină într-o temniță de rang D dezvăluie o cameră secretă terifiantă.',
-          thumbnail: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&auto=format&fit=crop&q=80',
-          duration: '24m',
-          durationSeconds: 1440,
-          videoUrl: SAMPLE_VIDEOS.fantasy,
-          introStart: 85,
-          introEnd: 170,
-        },
-        {
-          id: 'sl-ep2',
-          seasonNumber: 1,
-          episodeNumber: 2,
-          title: 'Dacă aș avea o altă șansă',
-          romajiTitle: 'If I Had One More Chance',
-          description: 'Statuile gigantice încep să se miște și impun regulile Templului Cartenon.',
-          thumbnail: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=400&auto=format&fit=crop&q=80',
-          duration: '24m',
-          durationSeconds: 1440,
-          videoUrl: SAMPLE_VIDEOS.action,
-          introStart: 80,
-          introEnd: 165,
-        },
-      ],
-    },
-    {
-      id: 'spirited-away',
-      title: 'Călătoria lui Chihiro',
-      romajiTitle: 'Sen to Chihiro no Kamikakushi',
-      englishTitle: 'Spirited Away',
-      description: 'O fetiță de 10 ani se rătăcește într-o lume guvernată de zei, vrăjitoare și spirite, unde părinții ei sunt transformați în porci, fiind nevoită să lucreze într-o baie publică mistică pentru a-și recăpăta libertatea.',
-      coverImage: 'https://images.unsplash.com/photo-1519638399535-1b036603ac77?w=600&auto=format&fit=crop&q=80',
-      bannerImage: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1600&auto=format&fit=crop&q=80',
-      genres: ['Aventură', 'Supranatural', 'Ghibli', 'Clasic'],
-      rating: 9.7,
-      totalRatings: 16700,
-      releaseYear: 2001,
+      genres: ['Sci-Fi', 'Action', 'Cyberpunk'],
+      category: 'movie',
+      streamType: 'mp4',
+      videoUrl: SAMPLE_VIDEOS.tearsOfSteel,
+      rating: 7.2,
+      totalRatings: 840,
+      releaseYear: 2012,
       season: 'Vară',
       status: 'Finalizat',
-      studio: 'Studio Ghibli',
-      ageRating: 'Toate vârstele',
+      studio: 'Blender VFX',
+      ageRating: '16+',
       featured: false,
       trendingRank: 7,
+      sourceOrigin: 'demo',
+      franchise: 'Open Movies',
       totalEpisodes: 1,
       createdAt: new Date().toISOString(),
       episodes: [
         {
-          id: 'sa-film',
+          id: 'tos-film',
           seasonNumber: 1,
           episodeNumber: 1,
-          title: 'Filmul Complet (Remasterizat HD)',
-          romajiTitle: 'Eiga',
-          description: 'Capodopera premiată cu Oscar a regizorului Hayao Miyazaki.',
-          thumbnail: 'https://images.unsplash.com/photo-1519638399535-1b036603ac77?w=400&auto=format&fit=crop&q=80',
-          duration: '2h 5m',
-          durationSeconds: 7500,
-          videoUrl: SAMPLE_VIDEOS.drama,
+          title: 'Filmul Complet HD',
+          description: 'Războiul împotriva inteligenței artificiale distructive.',
+          thumbnail: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&auto=format&fit=crop&q=80',
+          duration: '12m',
+          durationSeconds: 720,
+          videoUrl: SAMPLE_VIDEOS.tearsOfSteel,
+          streamType: 'mp4',
           introStart: 0,
-          introEnd: 45,
+          introEnd: 20,
         },
       ],
     },
     {
-      id: 'bocchi-the-rock',
-      title: 'Bocchi the Rock!',
-      romajiTitle: 'Bocchi za Rokku!',
-      englishTitle: 'Bocchi the Rock!',
-      description: 'Hitori Gotoh este o elevă de liceu extrem de anxioasă social, dar chitaristă genială pe internet sub pseudonimul guitarhero. Destinul o aduce în trupa Kessoku Band.',
-      coverImage: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
-      bannerImage: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1600&auto=format&fit=crop&q=80',
-      genres: ['Comedie', 'Muzică', 'Slice of Life'],
-      rating: 9.2,
-      totalRatings: 7800,
-      releaseYear: 2022,
-      season: 'Toamnă',
-      status: 'Finalizat',
-      studio: 'CloverWorks',
-      ageRating: '13+',
+      id: 'f1-grand-prix-demo',
+      title: 'Grand Prix Racing Live Feed',
+      romajiTitle: 'Supootsu Guranpuri',
+      englishTitle: 'Formula Grand Prix Live Highlights',
+      description: 'Cele mai spectaculoase momente din cursele auto de viteză transmise prin playerul universal Animaxia.',
+      coverImage: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&auto=format&fit=crop&q=80',
+      bannerImage: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=1600&auto=format&fit=crop&q=80',
+      genres: ['Racing', 'Sport', 'Live'],
+      category: 'sport',
+      streamType: 'mp4',
+      videoUrl: SAMPLE_VIDEOS.weAreGoingOnBullrun,
+      rating: 8.8,
+      totalRatings: 610,
+      releaseYear: 2024,
+      season: 'Primăvară',
+      status: 'În difuzare',
+      studio: 'Animaxia Sport',
+      ageRating: 'Toate vârstele',
       featured: false,
       trendingRank: 8,
-      totalEpisodes: 2,
+      sourceOrigin: 'demo',
+      totalEpisodes: 1,
       createdAt: new Date().toISOString(),
       episodes: [
         {
-          id: 'btr-ep1',
+          id: 'f1-ep1',
           seasonNumber: 1,
           episodeNumber: 1,
-          title: 'Singuraticul rostogolitor',
-          romajiTitle: 'Korogaru Bocchi',
-          description: 'Hitori ia chitara la școală sperând cu disperare că cineva o va invita într-o trupă.',
-          thumbnail: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80',
-          duration: '24m',
-          durationSeconds: 1440,
-          videoUrl: SAMPLE_VIDEOS.chill,
-          introStart: 60,
-          introEnd: 145,
-        },
-        {
-          id: 'btr-ep2',
-          seasonNumber: 1,
-          episodeNumber: 2,
-          title: 'Până mâine',
-          romajiTitle: 'Mata Ashita',
-          description: 'Prima slujbă part-time a lui Bocchi la clubul de muzică live Starry.',
-          thumbnail: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&auto=format&fit=crop&q=80',
-          duration: '23m',
-          durationSeconds: 1380,
-          videoUrl: SAMPLE_VIDEOS.fantasy,
-          introStart: 70,
-          introEnd: 155,
+          title: 'Cursa de Calificare & Highlights',
+          description: 'Depășiri spectaculoase și tururi de circuit.',
+          thumbnail: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=400&auto=format&fit=crop&q=80',
+          duration: '15m',
+          durationSeconds: 900,
+          videoUrl: SAMPLE_VIDEOS.weAreGoingOnBullrun,
+          streamType: 'mp4',
+          introStart: 0,
+          introEnd: 15,
         },
       ],
     },
@@ -576,100 +498,88 @@ const SEED_DATA: DatabaseSchema = {
   watchHistory: [
     {
       userId: 'user-1',
-      animeId: 'shingeki-no-kyojin',
-      episodeId: 'snk-s1-ep1',
-      progressSeconds: 840,
-      durationSeconds: 1440,
+      animeId: 'animaxia-hls-demo',
+      episodeId: 'hls-demo-ep1',
+      progressSeconds: 320,
+      durationSeconds: 600,
       completed: false,
-      updatedAt: new Date(Date.now() - 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 600000).toISOString(),
     },
     {
       userId: 'user-1',
-      animeId: 'frieren-beyond-journeys-end',
-      episodeId: 'frieren-ep1',
-      progressSeconds: 1210,
-      durationSeconds: 1440,
+      animeId: 'sintel',
+      episodeId: 'sintel-film',
+      progressSeconds: 450,
+      durationSeconds: 900,
       completed: false,
-      updatedAt: new Date(Date.now() - 86400000).toISOString(),
+      updatedAt: new Date(Date.now() - 1800000).toISOString(),
     },
   ],
   watchlist: [
     {
       userId: 'user-1',
-      animeId: 'kimetsu-no-yaiba',
+      animeId: 'animaxia-hls-demo',
       status: 'watching',
       favorite: true,
       updatedAt: new Date().toISOString(),
     },
     {
       userId: 'user-1',
-      animeId: 'cyberpunk-edgerunners',
+      animeId: 'sintel',
+      status: 'watching',
+      favorite: true,
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      userId: 'user-1',
+      animeId: 'big-buck-bunny',
       status: 'plan_to_watch',
-      favorite: true,
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      userId: 'user-1',
-      animeId: 'frieren-beyond-journeys-end',
-      status: 'watching',
-      favorite: true,
+      favorite: false,
       updatedAt: new Date().toISOString(),
     },
   ],
   comments: [
     {
       id: 'c-1',
-      animeId: 'shingeki-no-kyojin',
-      episodeId: 'snk-s1-ep1',
+      animeId: 'animaxia-hls-demo',
       userId: 'user-2',
       userName: 'Sakura_Yuki',
       userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      content: 'Episodul 1 te prinde instantaneu! Coloana sonoră compusă de Hiroyuki Sawano dă fiori de fiecare dată.',
-      timestampVideo: 180,
+      content: 'Playerul HLS se mișcă incredibil de rapid! Fără buffering chiar și la 1080p.',
       isSpoiler: false,
-      likes: 24,
-      likedBy: ['user-1', 'user-3'],
-      createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-    },
-    {
-      id: 'c-2',
-      animeId: 'shingeki-no-kyojin',
-      episodeId: 'snk-s1-ep1',
-      userId: 'user-3',
-      userName: 'Radu Sensei',
-      userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-      content: 'Atenție la secvența din vis de la început, are semnificații enorme pentru întregul final al seriei!',
-      timestampVideo: 45,
-      isSpoiler: true,
-      likes: 18,
+      likes: 12,
       likedBy: ['user-1'],
-      createdAt: new Date(Date.now() - 86400000).toISOString(),
+      createdAt: new Date(Date.now() - 3600000).toISOString(),
     },
+  ],
+  socialActivity: [
     {
-      id: 'c-3',
-      animeId: 'frieren-beyond-journeys-end',
-      episodeId: 'frieren-ep1',
+      id: 'act-1',
+      type: 'watch',
       userId: 'user-1',
       userName: 'Alexandru Otaku',
       userAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-      content: 'Frieren este pură poezie vizuală. Ritmul lent și emoția pură sunt exact ceea ce lipsea din anime-urile actuale.',
-      isSpoiler: false,
-      likes: 31,
-      likedBy: ['user-2'],
-      createdAt: new Date().toISOString(),
+      animeId: 'animaxia-hls-demo',
+      animeTitle: 'Animaxia HLS Demo',
+      createdAt: new Date(Date.now() - 300000).toISOString(),
+    },
+    {
+      id: 'act-2',
+      type: 'comment',
+      userId: 'user-2',
+      userName: 'Sakura_Yuki',
+      userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      animeId: 'animaxia-hls-demo',
+      animeTitle: 'Animaxia HLS Demo',
+      text: 'Super rezoluție adaptivă!',
+      createdAt: new Date(Date.now() - 600000).toISOString(),
     },
   ],
   userRatings: [
     {
       userId: 'user-1',
-      animeId: 'shingeki-no-kyojin',
-      score: 10,
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      userId: 'user-1',
-      animeId: 'frieren-beyond-journeys-end',
-      score: 10,
+      animeId: 'animaxia-hls-demo',
+      score: 8,
       updatedAt: new Date().toISOString(),
     },
   ],
@@ -692,20 +602,11 @@ const SEED_DATA: DatabaseSchema = {
       role: 'vip',
       joinedDate: '2024-03-20',
     },
-    {
-      id: 'user-3',
-      name: 'Radu Sensei',
-      email: 'radu@animaxia.local',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-      tag: '@radu_sensei',
-      role: 'user',
-      joinedDate: '2024-04-02',
-    },
   ],
   settings: {
     siteName: 'Animaxia',
-    announcement: 'Bun venit pe Animaxia! Streaming 100% local, fără reclame, cu redare instantanee HD.',
-    version: '2.5.0-local',
+    announcement: 'Vizionează totul. Player universal: MP4, HLS, DASH, YouTube, iframe și miner integrat.',
+    version: '3.0.0-universal',
     lastBackup: new Date().toISOString(),
   },
 };
@@ -729,14 +630,22 @@ class LocalDatabase {
         const fileContent = fs.readFileSync(this.filePath, 'utf-8');
         const parsed = JSON.parse(fileContent);
         if (parsed && Array.isArray(parsed.animes) && parsed.animes.length > 0) {
+          // Normalize category if missing
+          parsed.animes.forEach((a: Anime) => {
+            if (!a.category) {
+              if (a.genres?.includes('Sport')) a.category = 'sport';
+              else if (a.totalEpisodes > 2) a.category = 'series';
+              else a.category = 'anime';
+            }
+          });
+          if (!parsed.socialActivity) parsed.socialActivity = SEED_DATA.socialActivity;
           return parsed;
         }
       }
     } catch (err) {
-      console.error('[Animaxia DB] Eroare la citirea fișierului local. Se va crea baza de date nouă:', err);
+      console.error('[Animaxia DB] Eroare la citire:', err);
     }
 
-    // Save initial seed data
     this.saveToDisk(SEED_DATA);
     return JSON.parse(JSON.stringify(SEED_DATA));
   }
@@ -746,7 +655,7 @@ class LocalDatabase {
       const json = JSON.stringify(data, null, 2);
       fs.writeFileSync(this.filePath, json, 'utf-8');
     } catch (err) {
-      console.error('[Animaxia DB] Eroare la scrierea pe disc:', err);
+      console.error('[Animaxia DB] Eroare la salvare pe disc:', err);
     }
   }
 
@@ -754,17 +663,41 @@ class LocalDatabase {
     this.saveToDisk(this.data);
   }
 
-  // --- STATS & MANAGEMENT ---
+  // --- STATS & COUNTS ---
+  public getCounts() {
+    const totalTitles = this.data.animes.length;
+    const totalMovies = this.data.animes.filter((a) => a.category === 'movie').length;
+    const totalSeries = this.data.animes.filter((a) => a.category === 'series').length;
+    const totalAnime = this.data.animes.filter((a) => a.category === 'anime').length;
+    const totalSport = this.data.animes.filter((a) => a.category === 'sport').length;
+    const totalMined = this.data.animes.filter((a) => a.category === 'mined' || a.sourceOrigin === 'miner').length;
+
+    return {
+      totalTitles,
+      totalMovies,
+      totalSeries,
+      totalAnime,
+      totalSport,
+      totalMined,
+    };
+  }
+
   public getStats() {
+    const counts = this.getCounts();
     const totalEpisodes = this.data.animes.reduce((acc, a) => acc + (a.episodes?.length || 0), 0);
     const totalMinutes = this.data.animes.reduce((acc, a) => {
       return acc + (a.episodes || []).reduce((epAcc, ep) => epAcc + Math.floor(ep.durationSeconds / 60), 0);
     }, 0);
 
+    const genresSet = new Set<string>();
+    this.data.animes.forEach((a) => a.genres?.forEach((g) => genresSet.add(g)));
+
     return {
-      totalAnimes: this.data.animes.length,
+      ...counts,
       totalEpisodes,
       totalMinutes,
+      totalGenres: genresSet.size,
+      totalCategories: 5,
       totalComments: this.data.comments.length,
       totalUsers: this.data.users.length,
       activeWatchHistory: this.data.watchHistory.length,
@@ -774,33 +707,163 @@ class LocalDatabase {
     };
   }
 
-  public exportDatabase(): string {
-    return JSON.stringify(this.data, null, 2);
+  public getTaxonomy() {
+    const yearsMap: Record<number, number> = {};
+    const genresMap: Record<string, number> = {};
+    const categoriesMap: Record<string, number> = {};
+    const studiosMap: Record<string, number> = {};
+    const franchisesMap: Record<string, number> = {};
+
+    this.data.animes.forEach((a) => {
+      if (a.releaseYear) {
+        yearsMap[a.releaseYear] = (yearsMap[a.releaseYear] || 0) + 1;
+      }
+      if (a.category) {
+        categoriesMap[a.category] = (categoriesMap[a.category] || 0) + 1;
+      }
+      if (a.genres) {
+        a.genres.forEach((g) => {
+          genresMap[g] = (genresMap[g] || 0) + 1;
+        });
+      }
+      if (a.studio && a.studio !== 'Necunoscut') {
+        studiosMap[a.studio] = (studiosMap[a.studio] || 0) + 1;
+      }
+      if (a.franchise) {
+        franchisesMap[a.franchise] = (franchisesMap[a.franchise] || 0) + 1;
+      }
+    });
+
+    const years = Object.keys(yearsMap).map(Number).sort((a, b) => b - a);
+    const decades = Array.from(new Set(years.map((y) => `${Math.floor(y / 10) * 10}s`)));
+
+    return {
+      years: yearsMap,
+      decades,
+      genres: genresMap,
+      categories: categoriesMap,
+      studios: studiosMap,
+      franchises: franchisesMap,
+      totalExtracted: {
+        titles: this.data.animes.length,
+        years: Object.keys(yearsMap).length,
+        genres: Object.keys(genresMap).length,
+        categories: Object.keys(categoriesMap).length,
+        studios: Object.keys(studiosMap).length,
+        franchises: Object.keys(franchisesMap).length,
+      },
+    };
   }
 
-  public importDatabase(newData: any) {
-    if (!newData || !Array.isArray(newData.animes)) {
-      throw new Error('Structura fișierului JSON este invalidă.');
+  // --- CONTENT INGESTION & DUPLICATE CHECK ---
+  public checkDuplicate(urlOrTitle: string): { isDuplicate: boolean; match?: Anime } {
+    const needle = urlOrTitle.trim().toLowerCase();
+    const match = this.data.animes.find((a) => {
+      if (a.title.toLowerCase() === needle) return true;
+      if (a.videoUrl && a.videoUrl.toLowerCase() === needle) return true;
+      if (a.episodes.some((e) => e.videoUrl.toLowerCase() === needle)) return true;
+      return false;
+    });
+
+    return { isDuplicate: !!match, match };
+  }
+
+  public detectStreamType(input: string): {
+    streamType: StreamType;
+    cleanUrl: string;
+    inferredTitle: string;
+    inferredCategory: ContentCategory;
+    embedCode?: string;
+  } {
+    const trimmed = input.trim();
+
+    // Check if iframe
+    if (trimmed.startsWith('<iframe') || trimmed.includes('<iframe')) {
+      const srcMatch = trimmed.match(/src=["'](.*?)["']/);
+      const cleanUrl = srcMatch ? srcMatch[1] : trimmed;
+      return {
+        streamType: 'iframe',
+        cleanUrl,
+        inferredTitle: 'Video Embed Importat',
+        inferredCategory: 'movie',
+        embedCode: trimmed,
+      };
     }
-    this.data = newData;
-    this.data.settings.lastBackup = new Date().toISOString();
-    this.persist();
+
+    // YouTube check
+    const ytMatch = trimmed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+    if (ytMatch) {
+      return {
+        streamType: 'youtube',
+        cleanUrl: `https://www.youtube.com/embed/${ytMatch[1]}`,
+        inferredTitle: `YouTube Stream [${ytMatch[1]}]`,
+        inferredCategory: 'anime',
+      };
+    }
+
+    // HLS .m3u8
+    if (trimmed.includes('.m3u8')) {
+      return {
+        streamType: 'hls',
+        cleanUrl: trimmed,
+        inferredTitle: 'Live HLS Stream',
+        inferredCategory: 'movie',
+      };
+    }
+
+    // DASH .mpd
+    if (trimmed.includes('.mpd')) {
+      return {
+        streamType: 'dash',
+        cleanUrl: trimmed,
+        inferredTitle: 'DASH Stream',
+        inferredCategory: 'movie',
+      };
+    }
+
+    // Vimeo
+    if (trimmed.includes('vimeo.com')) {
+      const vimeoId = trimmed.split('/').pop()?.split('?')[0];
+      return {
+        streamType: 'vimeo',
+        cleanUrl: `https://player.vimeo.com/video/${vimeoId}`,
+        inferredTitle: `Vimeo Video ${vimeoId}`,
+        inferredCategory: 'movie',
+      };
+    }
+
+    // Direct MP4 / WebM
+    if (trimmed.includes('.mp4') || trimmed.includes('.webm')) {
+      const fileName = trimmed.split('/').pop()?.split('?')[0]?.replace(/\.(mp4|webm)/i, '') || 'Video MP4';
+      return {
+        streamType: 'mp4',
+        cleanUrl: trimmed,
+        inferredTitle: decodeURIComponent(fileName).replace(/[-_+]/g, ' '),
+        inferredCategory: 'movie',
+      };
+    }
+
+    // Fallback embed
+    return {
+      streamType: 'embed',
+      cleanUrl: trimmed,
+      inferredTitle: 'Conținut Video Universal',
+      inferredCategory: 'movie',
+    };
   }
 
-  public resetToDefault() {
-    this.data = JSON.parse(JSON.stringify(SEED_DATA));
-    this.persist();
-  }
-
-  // --- ANIMES ---
+  // --- ANIMES CATALOG ---
   public getAnimes(filters?: {
     search?: string;
     genre?: string;
+    category?: string;
     status?: string;
     sort?: string;
-    season?: string;
+    franchise?: string;
     year?: number;
-  }): Anime[] {
+    limit?: number;
+    offset?: number;
+  }): { items: Anime[]; total: number } {
     let result = [...this.data.animes];
 
     if (filters?.search) {
@@ -808,9 +871,11 @@ class LocalDatabase {
       result = result.filter(
         (a) =>
           a.title.toLowerCase().includes(q) ||
-          a.romajiTitle.toLowerCase().includes(q) ||
-          a.englishTitle.toLowerCase().includes(q) ||
-          a.description.toLowerCase().includes(q) ||
+          a.romajiTitle?.toLowerCase().includes(q) ||
+          a.englishTitle?.toLowerCase().includes(q) ||
+          a.description?.toLowerCase().includes(q) ||
+          a.studio?.toLowerCase().includes(q) ||
+          a.franchise?.toLowerCase().includes(q) ||
           a.genres.some((g) => g.toLowerCase().includes(q))
       );
     }
@@ -821,12 +886,16 @@ class LocalDatabase {
       );
     }
 
-    if (filters?.status && filters.status !== 'Toate') {
-      result = result.filter((a) => a.status === filters.status);
+    if (filters?.category && filters.category !== 'all' && filters.category !== 'Toate') {
+      result = result.filter((a) => a.category === filters.category);
     }
 
-    if (filters?.season && filters.season !== 'Toate') {
-      result = result.filter((a) => a.season === filters.season);
+    if (filters?.franchise && filters.franchise !== 'Toate') {
+      result = result.filter((a) => a.franchise?.toLowerCase() === filters.franchise!.toLowerCase());
+    }
+
+    if (filters?.status && filters.status !== 'Toate') {
+      result = result.filter((a) => a.status === filters.status);
     }
 
     if (filters?.year) {
@@ -848,16 +917,19 @@ class LocalDatabase {
         case 'title':
           result.sort((a, b) => a.title.localeCompare(b.title));
           break;
-        case 'episodes':
-          result.sort((a, b) => (b.episodes?.length || 0) - (a.episodes?.length || 0));
-          break;
         default:
-          // Default popular/trending
           result.sort((a, b) => (a.trendingRank || 99) - (b.trendingRank || 99));
       }
     }
 
-    return result;
+    const total = result.length;
+    if (filters?.offset !== undefined || filters?.limit !== undefined) {
+      const offset = filters.offset || 0;
+      const limit = filters.limit || 20;
+      result = result.slice(offset, offset + limit);
+    }
+
+    return { items: result, total };
   }
 
   public getFeaturedAnimes(): Anime[] {
@@ -867,7 +939,7 @@ class LocalDatabase {
   public getTrendingAnimes(): Anime[] {
     return [...this.data.animes]
       .sort((a, b) => (a.trendingRank || 99) - (b.trendingRank || 99))
-      .slice(0, 8);
+      .slice(0, 10);
   }
 
   public getAnimeById(id: string): Anime | undefined {
@@ -881,11 +953,33 @@ class LocalDatabase {
         ?.toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '') ||
-      `anime-${Date.now()}`;
+      `animaxia-${Date.now()}`;
+
+    const streamType = animeData.streamType || 'mp4';
+    const videoUrl = animeData.videoUrl || (animeData.episodes?.[0]?.videoUrl) || SAMPLE_VIDEOS.hlsDemo;
+
+    const episodes: Episode[] = animeData.episodes?.length
+      ? animeData.episodes
+      : [
+          {
+            id: `${id}-ep1`,
+            seasonNumber: 1,
+            episodeNumber: 1,
+            title: 'Episodul 1 / Video Principal',
+            description: animeData.description || 'Redare completă.',
+            thumbnail: animeData.coverImage || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&auto=format&fit=crop&q=80',
+            duration: '24m',
+            durationSeconds: 1440,
+            videoUrl,
+            streamType,
+            introStart: 0,
+            introEnd: 0,
+          },
+        ];
 
     const newAnime: Anime = {
       id,
-      title: animeData.title || 'Anime Nou',
+      title: animeData.title || 'Conținut Nou',
       romajiTitle: animeData.romajiTitle || animeData.title || '',
       englishTitle: animeData.englishTitle || animeData.title || '',
       description: animeData.description || 'Fără descriere.',
@@ -896,22 +990,41 @@ class LocalDatabase {
         animeData.bannerImage ||
         animeData.coverImage ||
         'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1600&auto=format&fit=crop&q=80',
-      genres: animeData.genres?.length ? animeData.genres : ['Acțiune'],
-      rating: animeData.rating || 9.0,
+      genres: animeData.genres?.length ? animeData.genres : ['Animation'],
+      category: animeData.category || 'movie',
+      streamType,
+      videoUrl,
+      rating: animeData.rating || 7.5,
       totalRatings: animeData.totalRatings || 1,
-      releaseYear: animeData.releaseYear || new24Year(),
+      releaseYear: animeData.releaseYear || 2025,
       season: animeData.season || 'Iarnă',
       status: animeData.status || 'În difuzare',
-      studio: animeData.studio || 'Studio Animație',
+      studio: animeData.studio || 'Animaxia Studio',
       ageRating: animeData.ageRating || '13+',
       featured: !!animeData.featured,
       trendingRank: animeData.trendingRank || this.data.animes.length + 1,
-      totalEpisodes: animeData.episodes?.length || 0,
-      episodes: animeData.episodes || [],
+      franchise: animeData.franchise,
+      collection: animeData.collection,
+      actors: animeData.actors || [],
+      directors: animeData.directors || [],
+      sourceOrigin: animeData.sourceOrigin || 'local',
+      totalEpisodes: episodes.length,
+      episodes,
       createdAt: new Date().toISOString(),
     };
 
     this.data.animes.unshift(newAnime);
+
+    // Add to social activity
+    this.addSocialActivity({
+      type: 'add',
+      userId: 'user-1',
+      userName: 'Alexandru Otaku',
+      userAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+      animeId: newAnime.id,
+      animeTitle: newAnime.title,
+    });
+
     this.persist();
     return newAnime;
   }
@@ -934,12 +1047,10 @@ class LocalDatabase {
   public deleteAnime(id: string): boolean {
     const initialLen = this.data.animes.length;
     this.data.animes = this.data.animes.filter((a) => a.id !== id);
-    // Cascade delete comments and history
     this.data.comments = this.data.comments.filter((c) => c.animeId !== id);
     this.data.watchHistory = this.data.watchHistory.filter((h) => h.animeId !== id);
     this.data.watchlist = this.data.watchlist.filter((w) => w.animeId !== id);
     this.data.userRatings = this.data.userRatings.filter((r) => r.animeId !== id);
-
     this.persist();
     return this.data.animes.length < initialLen;
   }
@@ -950,7 +1061,7 @@ class LocalDatabase {
     if (!anime) return null;
 
     const epNumber = episodeData.episodeNumber || anime.episodes.length + 1;
-    const epId = episodeData.id || `${anime.id}-s${episodeData.seasonNumber || 1}-ep${epNumber}`;
+    const epId = episodeData.id || `${anime.id}-ep${epNumber}`;
 
     const newEpisode: Episode = {
       id: epId,
@@ -958,13 +1069,14 @@ class LocalDatabase {
       episodeNumber: epNumber,
       title: episodeData.title || `Episodul ${epNumber}`,
       romajiTitle: episodeData.romajiTitle,
-      description: episodeData.description || 'Descrierea episodului...',
+      description: episodeData.description || 'Descriere episod...',
       thumbnail: episodeData.thumbnail || anime.coverImage,
       duration: episodeData.duration || '24m',
       durationSeconds: episodeData.durationSeconds || 1440,
-      videoUrl: episodeData.videoUrl || SAMPLE_VIDEOS.action,
-      introStart: episodeData.introStart || 75,
-      introEnd: episodeData.introEnd || 160,
+      videoUrl: episodeData.videoUrl || SAMPLE_VIDEOS.sintel,
+      streamType: episodeData.streamType || anime.streamType || 'mp4',
+      introStart: episodeData.introStart || 0,
+      introEnd: episodeData.introEnd || 0,
       outroStart: episodeData.outroStart,
     };
 
@@ -974,41 +1086,12 @@ class LocalDatabase {
     return newEpisode;
   }
 
-  public updateEpisode(animeId: string, episodeId: string, update: Partial<Episode>): Episode | null {
-    const anime = this.data.animes.find((a) => a.id === animeId);
-    if (!anime) return null;
-
-    const epIdx = anime.episodes.findIndex((e) => e.id === episodeId);
-    if (epIdx === -1) return null;
-
-    anime.episodes[epIdx] = { ...anime.episodes[epIdx], ...update };
-    this.persist();
-    return anime.episodes[epIdx];
-  }
-
-  public deleteEpisode(animeId: string, episodeId: string): boolean {
-    const anime = this.data.animes.find((a) => a.id === animeId);
-    if (!anime) return false;
-
-    const initialLen = anime.episodes.length;
-    anime.episodes = anime.episodes.filter((e) => e.id !== episodeId);
-    anime.totalEpisodes = anime.episodes.length;
-
-    this.data.watchHistory = this.data.watchHistory.filter(
-      (h) => !(h.animeId === animeId && h.episodeId === episodeId)
-    );
-
-    this.persist();
-    return anime.episodes.length < initialLen;
-  }
-
   // --- WATCH HISTORY ---
   public getWatchHistory(userId: string) {
     const items = this.data.watchHistory
       .filter((h) => h.userId === userId)
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
-    // Enrich with anime & episode metadata
     return items
       .map((item) => {
         const anime = this.data.animes.find((a) => a.id === item.animeId);
@@ -1019,6 +1102,8 @@ class LocalDatabase {
           animeTitle: anime.title,
           animeCover: anime.coverImage,
           animeBanner: anime.bannerImage,
+          category: anime.category,
+          streamType: episode?.streamType || anime.streamType || 'mp4',
           episodeTitle: episode ? episode.title : `Episod`,
           episodeNumber: episode ? episode.episodeNumber : 1,
           episodeThumbnail: episode ? episode.thumbnail : anime.coverImage,
@@ -1130,66 +1215,54 @@ class LocalDatabase {
     this.persist();
   }
 
-  // --- RATINGS ---
-  public rateAnime(userId: string, animeId: string, score: number) {
-    const idx = this.data.userRatings.findIndex(
-      (r) => r.userId === userId && r.animeId === animeId
-    );
+  // --- SOCIAL ACTIVITY & COMMENTS ---
+  public getSocialActivity(limit = 15): SocialActivityItem[] {
+    return [...this.data.socialActivity].slice(0, limit);
+  }
 
-    if (idx >= 0) {
-      this.data.userRatings[idx].score = score;
-      this.data.userRatings[idx].updatedAt = new Date().toISOString();
-    } else {
-      this.data.userRatings.push({
-        userId,
-        animeId,
-        score,
-        updatedAt: new Date().toISOString(),
-      });
+  public addSocialActivity(activity: Omit<SocialActivityItem, 'id' | 'createdAt'>) {
+    const newAct: SocialActivityItem = {
+      ...activity,
+      id: `act-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      createdAt: new Date().toISOString(),
+    };
+    this.data.socialActivity.unshift(newAct);
+    if (this.data.socialActivity.length > 50) {
+      this.data.socialActivity = this.data.socialActivity.slice(0, 50);
     }
-
-    // Recalculate anime average rating
-    const anime = this.data.animes.find((a) => a.id === animeId);
-    if (anime) {
-      const allRatings = this.data.userRatings.filter((r) => r.animeId === animeId);
-      const sum = allRatings.reduce((acc, curr) => acc + curr.score, 0);
-      const baseWeighted = (anime.rating * 10 + sum) / (10 + allRatings.length);
-      anime.rating = parseFloat(baseWeighted.toFixed(1));
-      anime.totalRatings += 1;
-    }
-
     this.persist();
-    return { score, newAverage: anime?.rating || score };
+    return newAct;
   }
 
-  public getUserRating(userId: string, animeId: string): number | null {
-    const rating = this.data.userRatings.find(
-      (r) => r.userId === userId && r.animeId === animeId
-    );
-    return rating ? rating.score : null;
-  }
-
-  // --- COMMENTS ---
-  public getComments(animeId: string, episodeId?: string): CommentItem[] {
+  public getComments(animeId: string): CommentItem[] {
     return this.data.comments
-      .filter((c) => {
-        if (episodeId) {
-          return c.animeId === animeId && c.episodeId === episodeId;
-        }
-        return c.animeId === animeId;
-      })
+      .filter((c) => c.animeId === animeId)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
   public addComment(comment: Omit<CommentItem, 'id' | 'likes' | 'likedBy' | 'createdAt'>): CommentItem {
     const newComment: CommentItem = {
       ...comment,
-      id: `c-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      id: `c-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       likes: 0,
       likedBy: [],
       createdAt: new Date().toISOString(),
     };
     this.data.comments.unshift(newComment);
+
+    const anime = this.data.animes.find((a) => a.id === comment.animeId);
+    if (anime) {
+      this.addSocialActivity({
+        type: 'comment',
+        userId: comment.userId,
+        userName: comment.userName,
+        userAvatar: comment.userAvatar,
+        animeId: anime.id,
+        animeTitle: anime.title,
+        text: comment.content.slice(0, 60),
+      });
+    }
+
     this.persist();
     return newComment;
   }
@@ -1210,11 +1283,51 @@ class LocalDatabase {
     return comment;
   }
 
-  public deleteComment(commentId: string): boolean {
-    const initialLen = this.data.comments.length;
-    this.data.comments = this.data.comments.filter((c) => c.id !== commentId);
+  // --- RATINGS ---
+  public rateAnime(userId: string, animeId: string, score: number) {
+    const idx = this.data.userRatings.findIndex(
+      (r) => r.userId === userId && r.animeId === animeId
+    );
+
+    if (idx >= 0) {
+      this.data.userRatings[idx].score = score;
+      this.data.userRatings[idx].updatedAt = new Date().toISOString();
+    } else {
+      this.data.userRatings.push({
+        userId,
+        animeId,
+        score,
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
+    const anime = this.data.animes.find((a) => a.id === animeId);
+    if (anime) {
+      const allRatings = this.data.userRatings.filter((r) => r.animeId === animeId);
+      const sum = allRatings.reduce((acc, curr) => acc + curr.score, 0);
+      anime.rating = parseFloat(((anime.rating * 10 + sum) / (10 + allRatings.length)).toFixed(1));
+      anime.totalRatings += 1;
+
+      this.addSocialActivity({
+        type: 'rate',
+        userId,
+        userName: 'Alexandru Otaku',
+        userAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+        animeId: anime.id,
+        animeTitle: anime.title,
+        score,
+      });
+    }
+
     this.persist();
-    return this.data.comments.length < initialLen;
+    return { score, newAverage: anime?.rating || score };
+  }
+
+  public getUserRating(userId: string, animeId: string): number | null {
+    const rating = this.data.userRatings.find(
+      (r) => r.userId === userId && r.animeId === animeId
+    );
+    return rating ? rating.score : null;
   }
 
   // --- USERS ---
@@ -1222,26 +1335,23 @@ class LocalDatabase {
     return this.data.users;
   }
 
-  public createUser(user: Partial<UserProfile>): UserProfile {
-    const newUser: UserProfile = {
-      id: `user-${Date.now()}`,
-      name: user.name || 'Otaku Nou',
-      email: user.email || 'fan@animaxia.local',
-      avatar:
-        user.avatar ||
-        'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=150&auto=format&fit=crop&q=80',
-      tag: user.tag || `@user_${Math.floor(Math.random() * 1000)}`,
-      role: (user.role as any) || 'user',
-      joinedDate: new Date().toISOString().split('T')[0],
-    };
-    this.data.users.push(newUser);
-    this.persist();
-    return newUser;
+  // --- BACKUP & RESET ---
+  public exportDatabase(): string {
+    return JSON.stringify(this.data, null, 2);
   }
-}
 
-function new24Year() {
-  return 2024;
+  public importDatabase(newData: any) {
+    if (!newData || !Array.isArray(newData.animes)) {
+      throw new Error('Structura fișierului JSON este invalidă.');
+    }
+    this.data = newData;
+    this.persist();
+  }
+
+  public resetToDefault() {
+    this.data = JSON.parse(JSON.stringify(SEED_DATA));
+    this.persist();
+  }
 }
 
 export const db = new LocalDatabase();

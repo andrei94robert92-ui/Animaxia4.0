@@ -283,9 +283,9 @@ export const AdminStudioModal: React.FC<AdminStudioModalProps> = ({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="p-4 rounded-2xl bg-neutral-950/60 border border-neutral-800">
                   <span className="text-[11px] text-neutral-400 font-semibold uppercase tracking-wider">
-                    Total Anime-uri
+                    Total Titluri
                   </span>
-                  <div className="text-2xl font-black text-white mt-1">{stats.totalAnimes}</div>
+                  <div className="text-2xl font-black text-white mt-1">{stats.totalTitles}</div>
                   <span className="text-[10px] text-emerald-400">Stocate local</span>
                 </div>
 
