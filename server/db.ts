@@ -1335,6 +1335,25 @@ class LocalDatabase {
     return this.data.users;
   }
 
+  public updateUserProfile(id: string, updates: Partial<UserProfile>): UserProfile | null {
+    const user = this.data.users.find((u) => u.id === id);
+    if (!user) return null;
+    Object.assign(user, updates);
+    this.persist();
+    return user;
+  }
+
+  public createUserProfile(profile: Omit<UserProfile, 'id' | 'joinedDate'>): UserProfile {
+    const newUser: UserProfile = {
+      ...profile,
+      id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      joinedDate: new Date().toISOString().split('T')[0],
+    };
+    this.data.users.push(newUser);
+    this.persist();
+    return newUser;
+  }
+
   // --- BACKUP & RESET ---
   public exportDatabase(): string {
     return JSON.stringify(this.data, null, 2);

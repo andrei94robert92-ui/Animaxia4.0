@@ -12,7 +12,9 @@ interface AnimeDetailModalProps {
   onPlayEpisode: (anime: Anime, episodeIndex: number) => void;
   currentUser: UserProfile;
   isInWatchlist: boolean;
+  watchlistStatus?: 'watching' | 'plan_to_watch' | 'completed' | 'on_hold' | 'dropped';
   onToggleWatchlist: (anime: Anime) => void;
+  onUpdateWatchlistStatus?: (anime: Anime, status: 'watching' | 'plan_to_watch' | 'completed' | 'on_hold' | 'dropped') => void;
   onAnimeUpdated?: (updated: Anime) => void;
 }
 
@@ -22,10 +24,13 @@ export const AnimeDetailModal: React.FC<AnimeDetailModalProps> = ({
   onPlayEpisode,
   currentUser,
   isInWatchlist,
+  watchlistStatus = 'plan_to_watch',
   onToggleWatchlist,
+  onUpdateWatchlistStatus,
   onAnimeUpdated,
 }) => {
-  const [activeTab, setActiveTab] = useState<'episodes' | 'comments'>('episodes');
+  const [activeTab, setActiveTab] = useState<'episodes' | 'comments' | 'trailer'>('episodes');
+  const [episodeSearch, setEpisodeSearch] = useState('');
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [newCommentText, setNewCommentText] = useState('');
   const [isSpoilerComment, setIsSpoilerComment] = useState(false);
@@ -188,17 +193,40 @@ export const AnimeDetailModal: React.FC<AnimeDetailModalProps> = ({
                 <span>Începe Ep. 1</span>
               </button>
 
-              <button
-                onClick={() => onToggleWatchlist(anime)}
-                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-semibold text-xs border transition cursor-pointer ${
-                  isInWatchlist
-                    ? 'bg-neutral-800 text-rose-400 border-rose-500/40'
-                    : 'bg-neutral-900 text-neutral-200 border-neutral-700 hover:bg-neutral-800'
-                }`}
-              >
-                {isInWatchlist ? <Check className="w-4 h-4 text-rose-400" /> : <Plus className="w-4 h-4" />}
-                <span>{isInWatchlist ? 'În Listă' : 'Adaugă'}</span>
-              </button>
+              {isInWatchlist ? (
+                <div className="flex items-center gap-1.5">
+                  <select
+                    value={watchlistStatus}
+                    onChange={(e) =>
+                      onUpdateWatchlistStatus &&
+                      onUpdateWatchlistStatus(anime, e.target.value as any)
+                    }
+                    className="bg-neutral-800 text-rose-300 font-semibold text-xs border border-rose-500/40 rounded-xl px-3 py-2.5 focus:outline-none cursor-pointer"
+                  >
+                    <option value="watching">🍿 Vizionez acum</option>
+                    <option value="plan_to_watch">📋 Planific să văd</option>
+                    <option value="completed">✅ Finalizat</option>
+                    <option value="on_hold">⏸️ În așteptare</option>
+                    <option value="dropped">✕ Abandonat</option>
+                  </select>
+
+                  <button
+                    onClick={() => onToggleWatchlist(anime)}
+                    className="px-2.5 py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-700 text-xs transition cursor-pointer"
+                    title="Elimină din listă"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => onToggleWatchlist(anime)}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-semibold text-xs border border-neutral-700 bg-neutral-900 text-neutral-200 hover:bg-neutral-800 transition cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Adaugă în Listă</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -242,12 +270,12 @@ export const AnimeDetailModal: React.FC<AnimeDetailModalProps> = ({
             </p>
           </div>
 
-          {/* Tabs: Episoade vs Comentarii */}
+          {/* Tabs: Episoade vs Trailer vs Comentarii */}
           <div>
-            <div className="flex items-center gap-2 border-b border-neutral-800 pb-2">
+            <div className="flex items-center gap-2 border-b border-neutral-800 pb-2 overflow-x-auto scrollbar-none">
               <button
                 onClick={() => setActiveTab('episodes')}
-                className={`px-4 py-2 text-xs font-bold rounded-lg transition cursor-pointer ${
+                className={`px-4 py-2 text-xs font-bold rounded-lg transition cursor-pointer whitespace-nowrap ${
                   activeTab === 'episodes'
                     ? 'bg-neutral-800 text-white shadow-sm'
                     : 'text-neutral-400 hover:text-white'
@@ -256,27 +284,111 @@ export const AnimeDetailModal: React.FC<AnimeDetailModalProps> = ({
                 Episoade ({anime.episodes.length})
               </button>
               <button
+                onClick={() => setActiveTab('trailer')}
+                className={`px-4 py-2 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                  activeTab === 'trailer'
+                    ? 'bg-neutral-800 text-white shadow-sm'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                <Play className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
+                <span>Trailer &amp; Stream Preview</span>
+              </button>
+              <button
                 onClick={() => setActiveTab('comments')}
-                className={`px-4 py-2 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1.5 ${
+                className={`px-4 py-2 text-xs font-bold rounded-lg transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
                   activeTab === 'comments'
                     ? 'bg-neutral-800 text-white shadow-sm'
                     : 'text-neutral-400 hover:text-white'
                 }`}
               >
                 <MessageSquare className="w-3.5 h-3.5" />
-                Discuții & Comentarii ({comments.length})
+                <span>Discuții &amp; Comentarii ({comments.length})</span>
               </button>
             </div>
+
+            {/* TAB: TRAILER & PREVIEW */}
+            {activeTab === 'trailer' && (
+              <div className="pt-4 space-y-3">
+                <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-neutral-950 border border-neutral-800 shadow-2xl">
+                  {anime.streamType === 'youtube' || (anime.videoUrl && (anime.videoUrl.includes('youtube.com') || anime.videoUrl.includes('youtu.be'))) ? (
+                    <iframe
+                      src={
+                        anime.videoUrl?.includes('embed')
+                          ? anime.videoUrl
+                          : anime.videoUrl?.includes('watch?v=')
+                          ? `https://www.youtube.com/embed/${anime.videoUrl.split('watch?v=')[1]?.split('&')[0]}?autoplay=1`
+                          : anime.videoUrl?.includes('youtu.be/')
+                          ? `https://www.youtube.com/embed/${anime.videoUrl.split('youtu.be/')[1]?.split('?')[0]}?autoplay=1`
+                          : anime.videoUrl
+                      }
+                      title={`${anime.title} Trailer`}
+                      className="w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : anime.streamType === 'iframe' && anime.videoUrl ? (
+                    <iframe
+                      src={anime.videoUrl}
+                      title={`${anime.title} Player`}
+                      className="w-full h-full border-0"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <video
+                      src={anime.episodes[0]?.videoUrl || anime.videoUrl}
+                      controls
+                      autoPlay
+                      className="w-full h-full object-cover"
+                      poster={anime.bannerImage || anime.coverImage}
+                    >
+                      Browserul tău nu suportă redarea video HTML5.
+                    </video>
+                  )}
+                </div>
+                <div className="flex items-center justify-between p-3 bg-neutral-950/60 rounded-xl border border-neutral-800 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white">{anime.title}</span>
+                    <span className="text-neutral-500">·</span>
+                    <span className="text-neutral-400">Preview HD Stream ({anime.streamType?.toUpperCase() || 'HLS'})</span>
+                  </div>
+                  <button
+                    onClick={() => onPlayEpisode(anime, 0)}
+                    className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-white" />
+                    <span>Lansează în Player Universal</span>
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* TAB: EPISODES */}
             {activeTab === 'episodes' && (
               <div className="pt-4 space-y-3">
+                {anime.episodes.length > 3 && (
+                  <div className="relative mb-2">
+                    <input
+                      type="text"
+                      placeholder="Filtrează episoade după titlu sau număr..."
+                      value={episodeSearch}
+                      onChange={(e) => setEpisodeSearch(e.target.value)}
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500"
+                    />
+                  </div>
+                )}
                 {anime.episodes.length === 0 ? (
                   <p className="text-xs text-neutral-500 py-6 text-center">
                     Nu există episoade adăugate încă. Poți adăuga din Studio Admin.
                   </p>
                 ) : (
-                  anime.episodes.map((ep, idx) => (
+                  anime.episodes
+                    .filter((ep) =>
+                      !episodeSearch.trim() ||
+                      ep.title.toLowerCase().includes(episodeSearch.toLowerCase()) ||
+                      `ep ${ep.episodeNumber}`.includes(episodeSearch.toLowerCase())
+                    )
+                    .map((ep, idx) => (
                     <div
                       key={ep.id}
                       onClick={() => onPlayEpisode(anime, idx)}
@@ -311,6 +423,11 @@ export const AnimeDetailModal: React.FC<AnimeDetailModalProps> = ({
                           <p className="text-xs text-neutral-400 line-clamp-2 mt-1">
                             {ep.description}
                           </p>
+                          {ep.introEnd && ep.introEnd > 0 && (
+                            <span className="inline-block mt-1 text-[10px] text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded font-mono">
+                              ⏭️ Skip intro: {Math.floor(ep.introStart || 0)}s - {Math.floor(ep.introEnd)}s
+                            </span>
+                          )}
                         </div>
                       </div>
 

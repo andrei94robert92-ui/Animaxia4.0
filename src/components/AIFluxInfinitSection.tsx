@@ -4,11 +4,13 @@ import { ExternalPoster, Anime } from '../types/anime';
 import { api } from '../services/api';
 
 interface AIFluxInfinitSectionProps {
+  animes?: Anime[];
   onPlayAnime: (anime: Anime) => void;
   onOpenDetails: (anime: Anime) => void;
 }
 
 export const AIFluxInfinitSection: React.FC<AIFluxInfinitSectionProps> = ({
+  animes = [],
   onPlayAnime,
   onOpenDetails,
 }) => {
@@ -35,6 +37,21 @@ export const AIFluxInfinitSection: React.FC<AIFluxInfinitSectionProps> = ({
   };
 
   const handlePosterClick = (p: ExternalPoster) => {
+    // Check if we have an exact or close match in our database
+    const matched = animes.find(
+      (a) =>
+        a.id === p.id ||
+        a.title.toLowerCase() === p.title.toLowerCase() ||
+        a.romajiTitle?.toLowerCase() === p.title.toLowerCase() ||
+        a.englishTitle?.toLowerCase() === p.title.toLowerCase() ||
+        p.title.toLowerCase().includes(a.title.toLowerCase())
+    );
+
+    if (matched) {
+      onOpenDetails(matched);
+      return;
+    }
+
     const syntheticAnime: Anime = {
       id: p.id,
       title: p.title,
@@ -59,7 +76,7 @@ export const AIFluxInfinitSection: React.FC<AIFluxInfinitSectionProps> = ({
           seasonNumber: 1,
           episodeNumber: 1,
           title: `${p.title} - Stream HD`,
-          description: 'Redare completă.',
+          description: 'Redare completă stream adaptiv.',
           thumbnail: p.cover,
           duration: '1h 45m',
           durationSeconds: 6300,

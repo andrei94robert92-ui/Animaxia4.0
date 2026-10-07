@@ -10,12 +10,14 @@ interface AITaxonomySectionProps {
   taxonomy: TaxonomyData | null;
   stats: DatabaseStats | null;
   onRefresh: () => void;
+  onSelectGenre?: (genre: string) => void;
 }
 
 export const AITaxonomySection: React.FC<AITaxonomySectionProps> = ({
   taxonomy,
   stats,
   onRefresh,
+  onSelectGenre,
 }) => {
   const [currentTimeStr, setCurrentTimeStr] = useState(
     new Date().toLocaleTimeString('ro-RO')
@@ -270,10 +272,15 @@ export const AITaxonomySection: React.FC<AITaxonomySectionProps> = ({
                   <Tag className="w-3.5 h-3.5" /> Genuri ({genresList.length})
                 </span>
                 <div className="flex flex-wrap gap-1">
-                  {genresList.slice(0, 5).map(([genre, count]) => (
-                    <span key={genre} className="text-[11px] bg-neutral-900 text-neutral-300 px-2 py-0.5 rounded border border-neutral-800">
-                      {genre} <small className="text-neutral-500">({count})</small>
-                    </span>
+                  {genresList.slice(0, 8).map(([genre, count]) => (
+                    <button
+                      key={genre}
+                      onClick={() => onSelectGenre && onSelectGenre(genre)}
+                      className="text-[11px] bg-neutral-900 hover:bg-rose-600 hover:text-white text-neutral-300 px-2 py-0.5 rounded border border-neutral-800 transition cursor-pointer flex items-center gap-1"
+                    >
+                      <span>{genre}</span>
+                      <small className="opacity-60 font-mono">({count})</small>
+                    </button>
                   ))}
                 </div>
               </div>

@@ -382,6 +382,19 @@ export const api = {
     return res.json();
   },
 
+  async updateAnime(id: string, updates: Partial<Anime>): Promise<Anime> {
+    const res = await fetch(`${BASE_URL}/animes/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Eroare la actualizarea anime-ului.');
+    }
+    return res.json();
+  },
+
   async deleteAnime(id: string): Promise<void> {
     await fetch(`${BASE_URL}/animes/${id}`, { method: 'DELETE' }).catch(() => {});
   },
@@ -451,8 +464,11 @@ export const api = {
   async scanMiner(targetUrl: string): Promise<{
     targetUrl: string;
     scannedAt: string;
+    status?: string;
+    detectedTitle?: string;
+    detectedCover?: string;
     streamsFound: number;
-    streams: Array<{ type: string; streamType: string; url: string; bitrate: string; playable: boolean }>;
+    streams: Array<{ type: string; streamType: string; url: string; bitrate: string; playable: boolean; status?: string }>;
   }> {
     const fallback = {
       targetUrl,
@@ -666,6 +682,26 @@ export const api = {
         joinedDate: '2024-03-20',
       },
     ]);
+  },
+
+  async createUser(profile: Partial<UserProfile>): Promise<UserProfile> {
+    const res = await fetch(`${BASE_URL}/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(profile),
+    });
+    if (!res.ok) throw new Error('Eroare la crearea contului.');
+    return res.json();
+  },
+
+  async updateUser(id: string, updates: Partial<UserProfile>): Promise<UserProfile> {
+    const res = await fetch(`${BASE_URL}/users/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+    if (!res.ok) throw new Error('Eroare la actualizarea profilului.');
+    return res.json();
   },
 
   // Backup & Reset

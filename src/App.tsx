@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Sparkles, Flame, Bookmark, History, Database, Film,
   Tv, Layers, RefreshCw, AlertCircle, Heart, Star,
-  Compass, Users, Download, ArrowRight
+  Compass, Users, Download, ArrowRight, Trash2, Play
 } from 'lucide-react';
 import {
   Anime, WatchHistoryItem, WatchlistItem, UserProfile,
@@ -26,6 +26,16 @@ import { MinerModal } from './components/MinerModal';
 import { CommandPaletteModal } from './components/CommandPaletteModal';
 import { AdminStudioModal } from './components/AdminStudioModal';
 import { RightSidebarDrawer } from './components/RightSidebarDrawer';
+import { CatalogView } from './components/CatalogView';
+import { UserProfileModal } from './components/UserProfileModal';
+import { ToastContainer, ToastMessage } from './components/Toast';
+import { KidsChannelsModal } from './components/KidsChannelsModal';
+import { AILabSuiteModal } from './components/AILabSuiteModal';
+import { SystemDiagnosticsModal } from './components/SystemDiagnosticsModal';
+import { TasteProfileModal } from './components/TasteProfileModal';
+import { GlobalRegionsModal } from './components/GlobalRegionsModal';
+import { UniversesModal } from './components/UniversesModal';
+import { PremiumPlansModal } from './components/PremiumPlansModal';
 
 export default function App() {
   const [animes, setAnimes] = useState<Anime[]>([]);
@@ -42,6 +52,17 @@ export default function App() {
     role: 'admin',
     joinedDate: '2024-01-15',
   });
+
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const showToast = (text: string, type: 'success' | 'info' | 'error' = 'info') => {
+    const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+    setToasts((prev) => [...prev, { id, text, type }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
 
   const [counts, setCounts] = useState<CatalogCounts>({
     totalTitles: 8,
@@ -74,6 +95,16 @@ export default function App() {
   const [isMinerOpen, setIsMinerOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  // Sidebar Feature Modals
+  const [kidsModal, setKidsModal] = useState<{ isOpen: boolean; channelName?: string }>({ isOpen: false });
+  const [aiLabModal, setAiLabModal] = useState<{ isOpen: boolean; toolName?: string }>({ isOpen: false });
+  const [diagnosticsModal, setDiagnosticsModal] = useState<{ isOpen: boolean; section?: 'all' | 'architecture' | 'cdn' | 'stress' | 'uptime' }>({ isOpen: false });
+  const [tasteModal, setTasteModal] = useState<{ isOpen: boolean; tab?: 'taste' | 'for_you' | 'reminders' }>({ isOpen: false });
+  const [regionsModal, setRegionsModal] = useState<{ isOpen: boolean; continentName?: string }>({ isOpen: false });
+  const [universesModal, setUniversesModal] = useState<{ isOpen: boolean; universeName?: string }>({ isOpen: false });
+  const [isPremiumOpen, setIsPremiumOpen] = useState(false);
 
   useEffect(() => {
     loadAllData();
@@ -159,6 +190,7 @@ export default function App() {
     try {
       if (exists) {
         await api.removeFromWatchlist(anime.id, currentUser.id);
+        showToast(`Eliminat din listă: ${anime.title}`, 'info');
       } else {
         await api.updateWatchlist({
           userId: currentUser.id,
@@ -166,10 +198,31 @@ export default function App() {
           status: 'plan_to_watch',
           favorite: true,
         });
+        showToast(`Adăugat în Lista Ta: ${anime.title}`, 'success');
       }
       refreshWatchlist();
     } catch (err) {
       console.error(err);
+      showToast('Eroare la actualizarea listei', 'error');
+    }
+  };
+
+  const handleUpdateWatchlistStatus = async (
+    anime: Anime,
+    status: 'watching' | 'plan_to_watch' | 'completed' | 'on_hold' | 'dropped'
+  ) => {
+    try {
+      await api.updateWatchlist({
+        userId: currentUser.id,
+        animeId: anime.id,
+        status,
+        favorite: status === 'watching' || status === 'completed',
+      });
+      showToast(`Status actualizat: ${anime.title}`, 'success');
+      refreshWatchlist();
+    } catch (err) {
+      console.error(err);
+      showToast('Eroare la actualizarea statusului', 'error');
     }
   };
 
@@ -183,6 +236,7 @@ export default function App() {
 
   const handleContentIngested = (newAnime: Anime) => {
     setAnimes((prev) => [newAnime, ...prev]);
+    showToast(`Titlu salvat în bibliotecă: ${newAnime.title}`, 'success');
     loadAllData();
   };
 
@@ -199,10 +253,14 @@ export default function App() {
         }}
         currentUser={currentUser}
         users={users}
-        onSelectUser={setCurrentUser}
+        onSelectUser={(u) => {
+          setCurrentUser(u);
+          showToast(`Autentificat ca ${u.name}`, 'info');
+        }}
         onOpenStudio={() => setIsStudioOpen(true)}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         onOpenRightSidebar={() => setIsRightSidebarOpen(true)}
+        onOpenProfileModal={() => setIsProfileOpen(true)}
       />
 
       {/* Main Content Body */}
@@ -285,6 +343,7 @@ export default function App() {
 
             {/* 🧠 AI Flux Infinit — 20 de postere pe pagină (100% Online, zero timeout) */}
             <AIFluxInfinitSection
+              animes={animes}
               onPlayAnime={(a) => handlePlayAnime(a, 0)}
               onOpenDetails={(a) => setSelectedAnimeForDetails(a)}
             />
@@ -292,6 +351,7 @@ export default function App() {
             {/* Activitatea comunității (Live Hub) */}
             <SocialHubSection
               currentUser={currentUser}
+              animes={animes}
               onOpenAnime={(animeId) => {
                 const anime = animes.find((a) => a.id === animeId);
                 if (anime) setSelectedAnimeForDetails(anime);
@@ -303,12 +363,14 @@ export default function App() {
               taxonomy={taxonomy}
               stats={null}
               onRefresh={loadAllData}
+              onSelectGenre={(g) => setSelectedGenre(g)}
             />
 
             {/* Francize populare */}
             <FranchisesSection
               selectedFranchise={selectedFranchise}
               onSelectFranchise={(fr) => setSelectedFranchise(fr)}
+              animes={animes}
             />
 
             {/* Ai un link de stream? Banner Miner */}
@@ -367,46 +429,118 @@ export default function App() {
           </div>
         )}
 
-        {/* VIEW 2: WATCHLIST */}
+        {/* VIEW 2: CATALOG COMPLET */}
+        {currentTab === 'catalog' && (
+          <CatalogView
+            animes={animes}
+            selectedCategory={selectedCategory}
+            onSelectCategory={(cat) => setSelectedCategory(cat)}
+            selectedGenre={selectedGenre}
+            onSelectGenre={(g) => setSelectedGenre(g)}
+            selectedStatus={selectedStatus}
+            onSelectStatus={(s) => setSelectedStatus(s)}
+            sortBy={sortBy}
+            onSortBy={(sort) => setSortBy(sort)}
+            watchlist={watchlist}
+            onPlayAnime={(a) => handlePlayAnime(a, 0)}
+            onOpenDetails={(a) => setSelectedAnimeForDetails(a)}
+            onToggleWatchlist={handleToggleWatchlist}
+          />
+        )}
+
+        {/* VIEW 3: WATCHLIST */}
         {currentTab === 'watchlist' && (
           <div>
             <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
               <div>
                 <h1 className="text-2xl font-black text-white tracking-tight">Lista Mea de Conținut</h1>
                 <p className="text-xs text-neutral-400 mt-1">
-                  Titlurile salvate local în profilul tău ({currentUser.name})
+                  Titlurile salvate local în profilul tău ({currentUser.name}) · {watchlist.length} titluri
                 </p>
+              </div>
+
+              {/* Status Filter Tabs */}
+              <div className="flex items-center gap-1.5 bg-neutral-900/80 p-1 rounded-xl border border-neutral-800 text-xs">
+                {[
+                  { id: 'all', label: 'Toate', icon: null },
+                  { id: 'watching', label: 'Vizionez', icon: '🍿' },
+                  { id: 'plan_to_watch', label: 'Planific', icon: '📋' },
+                  { id: 'completed', label: 'Finalizate', icon: '✅' },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setWatchlistFilter(tab.id as any)}
+                    className={`px-3 py-1.5 rounded-lg font-semibold transition cursor-pointer flex items-center gap-1 ${
+                      watchlistFilter === tab.id
+                        ? 'bg-rose-600 text-white shadow-sm'
+                        : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+                    }`}
+                  >
+                    {tab.icon && <span>{tab.icon}</span>}
+                    <span>{tab.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
 
-            {watchlist.length === 0 ? (
-              <div className="py-16 text-center bg-neutral-900/40 rounded-3xl border border-neutral-800 space-y-3">
-                <Bookmark className="w-10 h-10 text-neutral-600 mx-auto" />
-                <p className="text-sm text-neutral-300 font-semibold">Lista ta este goală.</p>
-                <button
-                  onClick={() => setCurrentTab('home')}
-                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs text-white font-bold tracking-wide cursor-pointer"
-                >
-                  Explorează Catalogul
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {watchlist.map((item) => {
-                  if (!item.anime) return null;
-                  return (
-                    <AnimeCard
-                      key={item.animeId}
-                      anime={item.anime}
-                      onPlay={(a) => handlePlayAnime(a, 0)}
-                      onOpenDetails={(a) => setSelectedAnimeForDetails(a)}
-                      onToggleWatchlist={handleToggleWatchlist}
-                      isInWatchlist={true}
-                    />
-                  );
-                })}
-              </div>
-            )}
+            {(() => {
+              const filteredList = watchlist.filter((item) => {
+                if (watchlistFilter === 'all') return true;
+                return item.status === watchlistFilter;
+              });
+
+              if (filteredList.length === 0) {
+                return (
+                  <div className="py-16 text-center bg-neutral-900/40 rounded-3xl border border-neutral-800 space-y-3">
+                    <Bookmark className="w-10 h-10 text-neutral-600 mx-auto" />
+                    <p className="text-sm text-neutral-300 font-semibold">
+                      {watchlist.length === 0
+                        ? 'Lista ta este goală.'
+                        : `Niciun titlu cu statusul selectat.`}
+                    </p>
+                    <button
+                      onClick={() => {
+                        setWatchlistFilter('all');
+                        if (watchlist.length === 0) setCurrentTab('home');
+                      }}
+                      className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs text-white font-bold tracking-wide cursor-pointer"
+                    >
+                      {watchlist.length === 0 ? 'Explorează Catalogul' : 'Arată toate titlurile'}
+                    </button>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {filteredList.map((item) => {
+                    if (!item.anime) return null;
+                    return (
+                      <div key={item.animeId} className="relative group">
+                        <AnimeCard
+                          anime={item.anime}
+                          onPlay={(a) => handlePlayAnime(a, 0)}
+                          onOpenDetails={(a) => setSelectedAnimeForDetails(a)}
+                          onToggleWatchlist={handleToggleWatchlist}
+                          isInWatchlist={true}
+                        />
+                        <div className="absolute top-2 left-2 z-20 pointer-events-none">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-neutral-950/90 text-rose-300 border border-neutral-800 backdrop-blur-md shadow">
+                            {item.status === 'watching'
+                              ? '🍿 Vizionez'
+                              : item.status === 'completed'
+                              ? '✅ Finalizat'
+                              : item.status === 'on_hold'
+                              ? '⏸️ În așteptare'
+                              : '📋 Planific'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -452,15 +586,31 @@ export default function App() {
                       </p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      const a = animes.find((x) => x.id === item.animeId);
-                      if (a) handlePlayAnime(a, 0, item.progressSeconds);
-                    }}
-                    className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs"
-                  >
-                    Reia
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        const a = animes.find((x) => x.id === item.animeId);
+                        if (a) {
+                          const epIdx = a.episodes.findIndex((e) => e.id === item.episodeId);
+                          handlePlayAnime(a, epIdx >= 0 ? epIdx : 0, item.progressSeconds);
+                        }
+                      }}
+                      className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow-md shadow-rose-600/30"
+                    >
+                      <Play className="w-3.5 h-3.5 fill-white" />
+                      <span>Reia ({Math.floor(item.progressSeconds / 60)}m)</span>
+                    </button>
+                    <button
+                      onClick={async () => {
+                        await api.removeHistoryItem(item.animeId, currentUser.id);
+                        refreshHistory();
+                      }}
+                      className="p-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-white transition cursor-pointer"
+                      title="Șterge din istoric"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -520,7 +670,9 @@ export default function App() {
           }}
           currentUser={currentUser}
           isInWatchlist={watchlist.some((w) => w.animeId === selectedAnimeForDetails.id)}
+          watchlistStatus={watchlist.find((w) => w.animeId === selectedAnimeForDetails.id)?.status}
           onToggleWatchlist={handleToggleWatchlist}
+          onUpdateWatchlistStatus={handleUpdateWatchlistStatus}
         />
       )}
 
@@ -543,6 +695,7 @@ export default function App() {
           isOpen={isMinerOpen}
           onClose={() => setIsMinerOpen(false)}
           onStreamIngested={handleContentIngested}
+          onTestPlay={(anime) => handlePlayAnime(anime, 0)}
         />
       )}
 
@@ -558,6 +711,9 @@ export default function App() {
             setSelectedCategory(cat);
             setCurrentTab('home');
           }}
+          onOpenStudio={() => setIsStudioOpen(true)}
+          onOpenMiner={() => setIsMinerOpen(true)}
+          onSelectTab={(tab) => setCurrentTab(tab)}
         />
       )}
 
@@ -574,18 +730,144 @@ export default function App() {
         isOpen={isRightSidebarOpen}
         onClose={() => setIsRightSidebarOpen(false)}
         onNavigate={(tab, payload) => {
-          if (payload?.category) {
+          if (payload?.category !== undefined) {
             setSelectedCategory(payload.category);
+          } else if (tab === 'catalog') {
+            setSelectedCategory('all');
           }
-          if (payload?.genre) {
+          if (payload?.genre !== undefined) {
             setSelectedGenre(payload.genre);
+          } else if (tab === 'catalog') {
+            setSelectedGenre('Toate');
           }
           setCurrentTab(tab as any);
+          if (payload?.scrollTo) {
+            setTimeout(() => {
+              const el = document.getElementById(payload.scrollTo);
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth' });
+              }
+            }, 100);
+          }
         }}
         onOpenMiner={() => setIsMinerOpen(true)}
         onOpenStudio={() => setIsStudioOpen(true)}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        onOpenKidsModal={(ch) => setKidsModal({ isOpen: true, channelName: ch })}
+        onOpenAiLabModal={(tool) => setAiLabModal({ isOpen: true, toolName: tool })}
+        onOpenDiagnosticsModal={(sec) => setDiagnosticsModal({ isOpen: true, section: sec })}
+        onOpenTasteProfileModal={(tab) => setTasteModal({ isOpen: true, tab })}
+        onOpenGlobalRegionsModal={(reg) => setRegionsModal({ isOpen: true, continentName: reg })}
+        onOpenUniversesModal={(u) => setUniversesModal({ isOpen: true, universeName: u })}
+        onOpenPremiumModal={() => setIsPremiumOpen(true)}
+        onOpenProfileModal={() => setIsProfileOpen(true)}
       />
+
+      {/* 1. Canale Kids & Nostalgice Modal */}
+      {kidsModal.isOpen && (
+        <KidsChannelsModal
+          isOpen={kidsModal.isOpen}
+          onClose={() => setKidsModal({ isOpen: false })}
+          selectedChannelName={kidsModal.channelName}
+          onPlayStream={(anime) => handlePlayAnime(anime, 0)}
+        />
+      )}
+
+      {/* 2. AI Lab Suite Modal */}
+      {aiLabModal.isOpen && (
+        <AILabSuiteModal
+          isOpen={aiLabModal.isOpen}
+          onClose={() => setAiLabModal({ isOpen: false })}
+          animes={animes}
+          activeTool={aiLabModal.toolName}
+          onPlayAnime={(anime) => handlePlayAnime(anime, 0)}
+        />
+      )}
+
+      {/* 3. Diagnosticare & Strat Edge Modal */}
+      {diagnosticsModal.isOpen && (
+        <SystemDiagnosticsModal
+          isOpen={diagnosticsModal.isOpen}
+          onClose={() => setDiagnosticsModal({ isOpen: false })}
+          counts={counts}
+          initialSection={diagnosticsModal.section}
+        />
+      )}
+
+      {/* 4. Personalizare & Profil de Gust Modal */}
+      {tasteModal.isOpen && (
+        <TasteProfileModal
+          isOpen={tasteModal.isOpen}
+          onClose={() => setTasteModal({ isOpen: false })}
+          animes={animes}
+          initialTab={tasteModal.tab}
+          onPlayAnime={(anime) => handlePlayAnime(anime, 0)}
+        />
+      )}
+
+      {/* 5. Lumea — 196 Țări Modal */}
+      {regionsModal.isOpen && (
+        <GlobalRegionsModal
+          isOpen={regionsModal.isOpen}
+          onClose={() => setRegionsModal({ isOpen: false })}
+          animes={animes}
+          selectedContinentName={regionsModal.continentName}
+          onPlayAnime={(anime) => handlePlayAnime(anime, 0)}
+        />
+      )}
+
+      {/* 6. Universuri & Francize Modal */}
+      {universesModal.isOpen && (
+        <UniversesModal
+          isOpen={universesModal.isOpen}
+          onClose={() => setUniversesModal({ isOpen: false })}
+          animes={animes}
+          selectedUniverseName={universesModal.universeName}
+          onPlayAnime={(anime) => handlePlayAnime(anime, 0)}
+        />
+      )}
+
+      {/* 7. Planuri Premium VIP Pass Modal */}
+      {isPremiumOpen && (
+        <PremiumPlansModal
+          isOpen={isPremiumOpen}
+          onClose={() => setIsPremiumOpen(false)}
+          currentUser={currentUser}
+          onUpgradeToVip={(u) => {
+            setCurrentUser(u);
+            setUsers((prev) => prev.map((x) => (x.id === u.id ? u : x)));
+            showToast('Statut Otaku VIP activat!', 'success');
+          }}
+        />
+      )}
+
+      {/* User Profile & Account Manager Modal */}
+      {isProfileOpen && (
+        <UserProfileModal
+          isOpen={isProfileOpen}
+          onClose={() => setIsProfileOpen(false)}
+          currentUser={currentUser}
+          users={users}
+          watchlist={watchlist}
+          history={history}
+          onUserUpdated={(updated) => {
+            setCurrentUser(updated);
+            setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
+            showToast('Profil actualizat cu succes!', 'success');
+          }}
+          onSelectUser={(u) => {
+            setCurrentUser(u);
+            showToast(`Autentificat ca ${u.name}`, 'info');
+          }}
+          onUserCreated={(created) => {
+            setUsers((prev) => [...prev, created]);
+            showToast(`Profil creat: ${created.name}`, 'success');
+          }}
+        />
+      )}
+
+      {/* Floating Interactive Toast Notifications */}
+      <ToastContainer toasts={toasts} onDismiss={removeToast} />
     </div>
   );
 }

@@ -16,6 +16,7 @@ interface NavbarProps {
   onOpenStudio: () => void;
   onOpenCommandPalette: () => void;
   onOpenRightSidebar: () => void;
+  onOpenProfileModal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -29,6 +30,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenStudio,
   onOpenCommandPalette,
   onOpenRightSidebar,
+  onOpenProfileModal,
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
 
@@ -79,11 +81,23 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
             <button
               onClick={() => {
-                setCurrentTab('home');
+                setCurrentTab('catalog');
+              }}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                currentTab === 'catalog'
+                  ? 'bg-neutral-800 text-white shadow-sm'
+                  : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+              }`}
+            >
+              Catalog
+            </button>
+            <button
+              onClick={() => {
+                setCurrentTab('catalog');
                 setSelectedCategory('movie');
               }}
               className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-                selectedCategory === 'movie'
+                selectedCategory === 'movie' && currentTab === 'catalog'
                   ? 'bg-neutral-800 text-white shadow-sm'
                   : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
               }`}
@@ -92,11 +106,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
             <button
               onClick={() => {
-                setCurrentTab('home');
+                setCurrentTab('catalog');
                 setSelectedCategory('series');
               }}
               className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-                selectedCategory === 'series'
+                selectedCategory === 'series' && currentTab === 'catalog'
                   ? 'bg-neutral-800 text-white shadow-sm'
                   : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
               }`}
@@ -105,11 +119,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
             <button
               onClick={() => {
-                setCurrentTab('home');
+                setCurrentTab('catalog');
                 setSelectedCategory('anime');
               }}
               className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-                selectedCategory === 'anime'
+                selectedCategory === 'anime' && currentTab === 'catalog'
                   ? 'bg-neutral-800 text-white shadow-sm'
                   : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
               }`}
@@ -118,11 +132,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
             <button
               onClick={() => {
-                setCurrentTab('home');
+                setCurrentTab('catalog');
                 setSelectedCategory('sport');
               }}
               className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-                selectedCategory === 'sport'
+                selectedCategory === 'sport' && currentTab === 'catalog'
                   ? 'bg-neutral-800 text-white shadow-sm'
                   : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
               }`}
@@ -131,11 +145,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
             <button
               onClick={() => {
-                setCurrentTab('home');
+                setCurrentTab('catalog');
                 setSelectedCategory('mined');
               }}
               className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-                selectedCategory === 'mined'
+                selectedCategory === 'mined' && currentTab === 'catalog'
                   ? 'bg-neutral-800 text-white shadow-sm'
                   : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
               }`}
@@ -243,13 +257,25 @@ export const Navbar: React.FC<NavbarProps> = ({
                   ))}
                 </div>
 
-                <div className="border-t border-neutral-800 mt-1 pt-1 px-2">
+                <div className="border-t border-neutral-800 mt-1 pt-1 px-2 space-y-1">
+                  {onOpenProfileModal && (
+                    <button
+                      onClick={() => {
+                        onOpenProfileModal();
+                        setShowUserMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-neutral-300 hover:text-white hover:bg-neutral-800 rounded-lg transition cursor-pointer"
+                    >
+                      <User className="w-3.5 h-3.5 text-rose-400" />
+                      <span>Editează Profilul</span>
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       onOpenStudio();
                       setShowUserMenu(false);
                     }}
-                    className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-neutral-300 hover:text-white hover:bg-neutral-800 rounded-lg transition"
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-neutral-300 hover:text-white hover:bg-neutral-800 rounded-lg transition cursor-pointer"
                   >
                     <Database className="w-3.5 h-3.5 text-rose-400" />
                     <span>Panou Bază de Date</span>

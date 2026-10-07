@@ -15,6 +15,14 @@ interface RightSidebarDrawerProps {
   onOpenMiner: () => void;
   onOpenStudio: () => void;
   onOpenCommandPalette: () => void;
+  onOpenKidsModal?: (channelName?: string) => void;
+  onOpenAiLabModal?: (toolName?: string) => void;
+  onOpenDiagnosticsModal?: (section?: 'all' | 'architecture' | 'cdn' | 'stress' | 'uptime') => void;
+  onOpenTasteProfileModal?: (tab?: 'taste' | 'for_you' | 'reminders') => void;
+  onOpenGlobalRegionsModal?: (continentName?: string) => void;
+  onOpenUniversesModal?: (universeName?: string) => void;
+  onOpenPremiumModal?: () => void;
+  onOpenProfileModal?: () => void;
 }
 
 export const RightSidebarDrawer: React.FC<RightSidebarDrawerProps> = ({
@@ -24,9 +32,16 @@ export const RightSidebarDrawer: React.FC<RightSidebarDrawerProps> = ({
   onOpenMiner,
   onOpenStudio,
   onOpenCommandPalette,
+  onOpenKidsModal,
+  onOpenAiLabModal,
+  onOpenDiagnosticsModal,
+  onOpenTasteProfileModal,
+  onOpenGlobalRegionsModal,
+  onOpenUniversesModal,
+  onOpenPremiumModal,
+  onOpenProfileModal,
 }) => {
   const [sidebarSearch, setSidebarSearch] = useState('');
-  const [activeFeatureModal, setActiveFeatureModal] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -43,9 +58,36 @@ export const RightSidebarDrawer: React.FC<RightSidebarDrawerProps> = ({
     } else if (actionType === 'nav') {
       onNavigate(payload?.tab || 'home', payload);
       onClose();
+    } else if (actionType === 'kids') {
+      if (onOpenKidsModal) onOpenKidsModal(itemTitle);
+      onClose();
+    } else if (actionType === 'ailab') {
+      if (onOpenAiLabModal) onOpenAiLabModal(itemTitle);
+      onClose();
+    } else if (actionType === 'universes') {
+      if (onOpenUniversesModal) onOpenUniversesModal(itemTitle);
+      onClose();
+    } else if (actionType === 'regions') {
+      if (onOpenGlobalRegionsModal) onOpenGlobalRegionsModal(itemTitle);
+      onClose();
+    } else if (actionType === 'profile') {
+      if (onOpenProfileModal) onOpenProfileModal();
+      onClose();
+    } else if (actionType === 'taste' || actionType === 'for_you' || actionType === 'reminders') {
+      if (onOpenTasteProfileModal) onOpenTasteProfileModal(actionType as any);
+      onClose();
+    } else if (actionType === 'diagnostics') {
+      if (onOpenDiagnosticsModal) onOpenDiagnosticsModal(payload?.section || 'all');
+      onClose();
+    } else if (actionType === 'premium') {
+      if (onOpenPremiumModal) onOpenPremiumModal();
+      onClose();
+    } else if (actionType === 'social') {
+      onNavigate('home', { scrollTo: 'social-hub' });
+      onClose();
     } else {
-      // Interactive AI suite / feature preview
-      setActiveFeatureModal(itemTitle);
+      if (onOpenAiLabModal) onOpenAiLabModal(itemTitle);
+      onClose();
     }
   };
 
@@ -90,7 +132,7 @@ export const RightSidebarDrawer: React.FC<RightSidebarDrawerProps> = ({
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
               <input
                 type="text"
-                placeholder="Caută titluri, anime, filme…"
+                placeholder="Caută în meniuri, canale, AI..."
                 value={sidebarSearch}
                 onChange={(e) => setSidebarSearch(e.target.value)}
                 className="w-full bg-neutral-900 text-xs text-white placeholder-neutral-500 pl-9 pr-4 py-2.5 rounded-xl border border-neutral-800 focus:outline-none focus:border-rose-500 transition"
@@ -116,11 +158,12 @@ export const RightSidebarDrawer: React.FC<RightSidebarDrawerProps> = ({
               </p>
               {[
                 { title: 'Acasă', tab: 'home', icon: '🏠' },
-                { title: 'Pentru Tine', tab: 'home', icon: '✨' },
-                { title: 'Filme', tab: 'home', category: 'movie', icon: '🎬' },
-                { title: 'Seriale', tab: 'home', category: 'series', icon: '📺' },
-                { title: 'Anime', tab: 'home', category: 'anime', icon: '⚔️' },
-                { title: 'Copii & Desene', tab: 'home', genre: 'Animation', icon: '🎨' },
+                { title: 'Catalog Complet', tab: 'catalog', icon: '📚' },
+                { title: 'Filme', tab: 'catalog', category: 'movie', icon: '🎬' },
+                { title: 'Seriale', tab: 'catalog', category: 'series', icon: '📺' },
+                { title: 'Anime', tab: 'catalog', category: 'anime', icon: '⚔️' },
+                { title: 'Sport', tab: 'catalog', category: 'sport', icon: '⚽' },
+                { title: 'Copii & Desene', tab: 'catalog', genre: 'Animation', icon: '🎨' },
               ].filter(item => matchesSearch(item.title)).map((item) => (
                 <button
                   key={item.title}
@@ -136,49 +179,62 @@ export const RightSidebarDrawer: React.FC<RightSidebarDrawerProps> = ({
               ))}
             </div>
 
-            {/* SECTION 2: AI METADATA */}
-            <div className="p-3 bg-neutral-900/60 rounded-2xl border border-neutral-800/80">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] font-bold text-neutral-300">AI Metadata</span>
-                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded border border-emerald-400/20">
-                  Activ & Sincronizat
+            {/* SECTION 2: CANALE KIDS & ANIMAȚIE */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between px-3 py-1">
+                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
+                  Canale Kids &amp; Animație
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                  Live 24/7
                 </span>
               </div>
-              <p className="text-[11px] text-neutral-400">
-                Indexare automată în timp real · Fără erori de timeout
-              </p>
+              {[
+                { title: 'Jetix', icon: '⚡' },
+                { title: 'Fox Kids', icon: '🦊' },
+                { title: 'Cartoon Network', icon: '📺' },
+                { title: 'Boomerang', icon: '🪃' },
+                { title: 'Disney Channel', icon: '🪄' },
+                { title: 'Minimax', icon: '🎈' },
+                { title: 'Nickelodeon', icon: '🧽' },
+                { title: 'Nicktoons', icon: '🛸' },
+              ].filter(item => matchesSearch(item.title)).map((item) => (
+                <button
+                  key={item.title}
+                  onClick={() => handleAction(item.title, 'kids')}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-neutral-300 hover:text-white hover:bg-neutral-900 transition text-left cursor-pointer group"
+                >
+                  <span className="flex items-center gap-2.5 font-medium">
+                    <span>{item.icon}</span>
+                    <span>{item.title}</span>
+                  </span>
+                  <span className="text-[10px] text-amber-400 font-mono font-bold group-hover:underline">
+                    Emite Live &gt;
+                  </span>
+                </button>
+              ))}
             </div>
 
-            {/* SECTION 3: AI SUITE 100X (18 MOTOARE AI) */}
+            {/* SECTION 3: AI LAB (8 CAPABILITĂȚI AI) */}
             <div className="space-y-1">
               <div className="flex items-center justify-between px-3 py-1">
                 <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">
-                  AI Suite 100X
+                  AI Lab Suite
                 </span>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-500/15 text-rose-300 border border-rose-500/30">
-                  18 Motoare AI
+                  8 Instrumente
                 </span>
               </div>
 
               {[
-                { title: 'AI Miner', icon: '⛏️', action: 'miner' },
-                { title: 'AI Metadata Dashboard', icon: '🏷️', action: 'studio' },
-                { title: 'AI Analyzer Dashboard', icon: '🔬', action: 'feature' },
-                { title: 'AI News Hub', icon: '📰', action: 'feature' },
-                { title: 'AI Social Hub', icon: '👥', action: 'feature' },
-                { title: 'AI Watch Party', icon: '🍿', action: 'feature' },
-                { title: 'AI Recommendation Engine', icon: '🎯', action: 'feature' },
-                { title: 'AI Franchise Engine', icon: '🔗', action: 'feature' },
-                { title: 'AI Taxonomy Generator', icon: '🌳', action: 'feature' },
-                { title: 'AI Statistics Dashboard', icon: '📊', action: 'studio' },
-                { title: 'AI Infinite Scroll Engine', icon: '♾️', action: 'feature' },
-                { title: 'AI Content Scanner', icon: '🩺', action: 'miner' },
-                { title: 'AI Source Discovery Engine', icon: '🧭', action: 'feature' },
-                { title: 'AI Duplicate Detector', icon: '🧬', action: 'feature' },
-                { title: 'AI Poster Scanner', icon: '🖼️', action: 'feature' },
-                { title: 'AI Trend Analyzer', icon: '📈', action: 'feature' },
-                { title: 'AI External Feed Engine', icon: '📡', action: 'feature' },
-                { title: 'Dashboard Administrare AI', icon: '🛠️', action: 'studio' },
+                { title: 'AI Companion', icon: '💬', action: 'ailab' },
+                { title: 'AI Recap', icon: '⏪', action: 'ailab' },
+                { title: 'AI Mood Playlist', icon: '🎭', action: 'ailab' },
+                { title: 'AI Spoiler Shield', icon: '🛡️', action: 'ailab' },
+                { title: 'AI Dubbing & Audio', icon: '🎙️', action: 'ailab' },
+                { title: 'AI Curation', icon: '🎯', action: 'ailab' },
+                { title: 'AI Playlist Editor', icon: '✨', action: 'ailab' },
+                { title: 'AI Miner Stream', icon: '⛏️', action: 'miner' },
               ].filter(item => matchesSearch(item.title)).map((item) => (
                 <button
                   key={item.title}
@@ -194,61 +250,26 @@ export const RightSidebarDrawer: React.FC<RightSidebarDrawerProps> = ({
               ))}
             </div>
 
-            {/* SECTION 4: AI LAB (8 CAPABILITĂȚI AI) */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between px-3 py-1">
-                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
-                  AI Lab
-                </span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                  8 Capabilități AI
-                </span>
-              </div>
-
-              {[
-                { title: 'AI Companion', icon: '💬' },
-                { title: 'AI Recap', icon: '⏪' },
-                { title: 'AI Mood Playlist', icon: '🎭' },
-                { title: 'AI Spoiler Shield', icon: '🛡️' },
-                { title: 'AI Dubbing', icon: '🎙️' },
-                { title: 'AI Curation', icon: '🎯' },
-                { title: 'AI Voice', icon: '🎤' },
-                { title: 'AI Playlist Editor', icon: '✨' },
-              ].filter(item => matchesSearch(item.title)).map((item) => (
-                <button
-                  key={item.title}
-                  onClick={() => handleAction(item.title)}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-neutral-300 hover:text-white hover:bg-neutral-900 transition text-left cursor-pointer group"
-                >
-                  <span className="flex items-center gap-2.5 font-medium">
-                    <span>{item.icon}</span>
-                    <span>{item.title}</span>
-                  </span>
-                  <ChevronRight className="w-3.5 h-3.5 text-neutral-600 group-hover:text-amber-400 transition" />
-                </button>
-              ))}
-            </div>
-
-            {/* SECTION 5: PERSONALIZARE (PERSONALIZARE 2.0) */}
+            {/* SECTION 4: PERSONALIZARE (PERSONALIZARE 2.0) */}
             <div className="space-y-1">
               <div className="flex items-center justify-between px-3 py-1">
                 <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-                  Personalizare
+                  Personalizare 2.0
                 </span>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-neutral-800 text-neutral-300">
-                  Personalizare 2.0
+                  Preferințe
                 </span>
               </div>
 
               {[
-                { title: 'Pentru Tine', icon: '✨' },
-                { title: 'Profil de gust', icon: '🎭' },
-                { title: 'Profile', icon: '👥' },
-                { title: 'Memento-uri', icon: '⏰' },
+                { title: 'Profil de gust', icon: '🎭', action: 'taste' },
+                { title: 'Pentru Tine', icon: '✨', action: 'for_you' },
+                { title: 'Memento-uri Episod', icon: '⏰', action: 'reminders' },
+                { title: 'Gestionare Profiluri', icon: '👥', action: 'profile' },
               ].filter(item => matchesSearch(item.title)).map((item) => (
                 <button
                   key={item.title}
-                  onClick={() => handleAction(item.title)}
+                  onClick={() => handleAction(item.title, item.action)}
                   className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-neutral-300 hover:text-white hover:bg-neutral-900 transition text-left cursor-pointer group"
                 >
                   <span className="flex items-center gap-2.5 font-medium">
@@ -260,45 +281,71 @@ export const RightSidebarDrawer: React.FC<RightSidebarDrawerProps> = ({
               ))}
             </div>
 
-            {/* SECTION 6 & 7: MEDIA & LIVE */}
+            {/* SECTION 5: UNIVERSURI */}
             <div className="space-y-1">
-              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider px-3 py-1">
-                Media & Live
+              <p className="text-[10px] font-bold text-purple-400 uppercase tracking-wider px-3 py-1">
+                Universuri &amp; Francize
               </p>
               {[
-                { title: 'Telenovele', icon: '📺', category: 'series' },
-                { title: 'Sport', icon: '⚽', category: 'sport' },
-                { title: 'Distracție', icon: '🎉', genre: 'Comedy' },
+                { title: 'Francize Anime de Top', icon: '⚔️' },
+                { title: 'Trilogii & Open Movies', icon: '🎬' },
+                { title: 'Universul Marvel Animat', icon: '🦸' },
+                { title: 'Universul Cyberpunk & Sci-Fi', icon: '🌃' },
+                { title: 'Blockbustere Animate Mondiale', icon: '💥' },
               ].filter(item => matchesSearch(item.title)).map((item) => (
                 <button
                   key={item.title}
-                  onClick={() => handleAction(item.title, 'nav', item)}
+                  onClick={() => handleAction(item.title, 'universes')}
                   className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-neutral-300 hover:text-white hover:bg-neutral-900 transition text-left cursor-pointer group"
                 >
                   <span className="flex items-center gap-2.5 font-medium">
                     <span>{item.icon}</span>
                     <span>{item.title}</span>
                   </span>
-                  <ChevronRight className="w-3.5 h-3.5 text-neutral-600 group-hover:text-rose-400 transition" />
+                  <ChevronRight className="w-3.5 h-3.5 text-neutral-600 group-hover:text-purple-400 transition" />
                 </button>
               ))}
             </div>
 
-            {/* SECTION 8: CONT */}
+            {/* SECTION 6: LUMEA — 196 ȚĂRI */}
             <div className="space-y-1">
-              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider px-3 py-1">
-                Cont
+              <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider px-3 py-1">
+                Lumea — 196 țări
               </p>
               {[
-                { title: 'Istoric', tab: 'history', icon: '🕒' },
-                { title: 'Playlist-uri', tab: 'watchlist', icon: '📑' },
-                { title: 'Statisticile mele', action: 'studio', icon: '📈' },
-                { title: 'Lista Mea', tab: 'watchlist', icon: '🔖' },
-                { title: 'Colecțiile Mele', tab: 'watchlist', icon: '🗂️' },
-                { title: 'Gestionare & Duplicate', action: 'studio', icon: '🧬' },
-                { title: 'Arhitectura Reală', action: 'studio', icon: '⚡' },
-                { title: 'Stres & Stabilitate', icon: '🛡️' },
-                { title: 'Stare Platformă', action: 'studio', icon: '🟢' },
+                { title: 'Asia', icon: '🏯' },
+                { title: 'Europa', icon: '🇪🇺' },
+                { title: 'America de Nord', icon: '🌎' },
+                { title: 'America de Sud', icon: '🌏' },
+                { title: 'Africa', icon: '🌍' },
+                { title: 'Oceania', icon: '🏝️' },
+              ].filter(item => matchesSearch(item.title)).map((item) => (
+                <button
+                  key={item.title}
+                  onClick={() => handleAction(item.title, 'regions')}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-neutral-300 hover:text-white hover:bg-neutral-900 transition text-left cursor-pointer group"
+                >
+                  <span className="flex items-center gap-2.5 font-medium">
+                    <span>{item.icon}</span>
+                    <span>{item.title}</span>
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 text-neutral-600 group-hover:text-blue-400 transition" />
+                </button>
+              ))}
+            </div>
+
+            {/* SECTION 7: CONT & SISTEM */}
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider px-3 py-1">
+                Cont &amp; Diagnosticare Sistem
+              </p>
+              {[
+                { title: 'Istoric de Vizionare', tab: 'history', icon: '🕒' },
+                { title: 'Lista Mea & Colecții', tab: 'watchlist', icon: '🔖' },
+                { title: 'Arhitectura Reală & Strat Edge', action: 'diagnostics', section: 'architecture', icon: '⚡' },
+                { title: 'Stres & Stabilitate Bază de Date', action: 'diagnostics', section: 'stress', icon: '🛡️' },
+                { title: 'Stare Platformă & Uptime', action: 'diagnostics', section: 'uptime', icon: '🟢' },
+                { title: 'Panou Administrare Studio', action: 'studio', icon: '🛠️' },
               ].filter(item => matchesSearch(item.title)).map((item) => (
                 <button
                   key={item.title}
@@ -309,115 +356,25 @@ export const RightSidebarDrawer: React.FC<RightSidebarDrawerProps> = ({
                     <span>{item.icon}</span>
                     <span>{item.title}</span>
                   </span>
-                  <ChevronRight className="w-3.5 h-3.5 text-neutral-600 group-hover:text-rose-400 transition" />
+                  <ChevronRight className="w-3.5 h-3.5 text-neutral-600 group-hover:text-emerald-400 transition" />
                 </button>
               ))}
             </div>
 
-            {/* SECTION 9: UNIVERSURI */}
+            {/* SECTION 8: PLATFORMĂ & VIP */}
             <div className="space-y-1">
               <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider px-3 py-1">
-                Universuri
+                Platformă &amp; Beneficii
               </p>
               {[
-                { title: 'Francise', icon: '🎬' },
-                { title: 'Trilogii', icon: '🎞️' },
-                { title: 'Marvel', icon: '🦸' },
-                { title: 'DC', icon: '🦇' },
-                { title: 'Blockbustere', icon: '💥' },
+                { title: 'Planuri Premium & VIP Pass', icon: '👑', action: 'premium' },
+                { title: 'Miner Video Stream & Sniffer', icon: '⛏️', action: 'miner' },
+                { title: 'Strat Edge & Viteze CDN', icon: '🌐', action: 'diagnostics', section: 'cdn' },
+                { title: 'Activitatea Comunității', icon: '⚡', action: 'social' },
               ].filter(item => matchesSearch(item.title)).map((item) => (
                 <button
                   key={item.title}
-                  onClick={() => handleAction(item.title)}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-neutral-300 hover:text-white hover:bg-neutral-900 transition text-left cursor-pointer group"
-                >
-                  <span className="flex items-center gap-2.5 font-medium">
-                    <span>{item.icon}</span>
-                    <span>{item.title}</span>
-                  </span>
-                  <ChevronRight className="w-3.5 h-3.5 text-neutral-600 group-hover:text-rose-400 transition" />
-                </button>
-              ))}
-            </div>
-
-            {/* SECTION 10: CANALE KIDS */}
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider px-3 py-1">
-                Canale Kids
-              </p>
-              {[
-                { title: 'Disney', icon: '🏰' },
-                { title: 'Jetix', icon: '⚡' },
-                { title: 'Fox Kids', icon: '🦊' },
-                { title: 'Cartoon Network', icon: '📺' },
-                { title: 'Boomerang', icon: '🪃' },
-                { title: 'Minimax', icon: '🎈' },
-                { title: 'Nickelodeon', icon: '🧽' },
-                { title: 'Disney Channel', icon: '🪄' },
-                { title: 'Nicktoons', icon: '🛸' },
-                { title: 'Cartoonito', icon: '🐰' },
-                { title: 'Disney Junior', icon: '🧸' },
-                { title: 'Nick Jr.', icon: '🌈' },
-                { title: 'JimJam', icon: '🍼' },
-                { title: 'Duck TV', icon: '🦆' },
-              ].filter(item => matchesSearch(item.title)).map((item) => (
-                <button
-                  key={item.title}
-                  onClick={() => handleAction(item.title)}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-neutral-300 hover:text-white hover:bg-neutral-900 transition text-left cursor-pointer group"
-                >
-                  <span className="flex items-center gap-2.5 font-medium">
-                    <span>{item.icon}</span>
-                    <span>{item.title}</span>
-                  </span>
-                  <ChevronRight className="w-3.5 h-3.5 text-neutral-600 group-hover:text-rose-400 transition" />
-                </button>
-              ))}
-            </div>
-
-            {/* SECTION 11: LUMEA — 196 ȚĂRI */}
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider px-3 py-1">
-                Lumea — 196 țări
-              </p>
-              {[
-                { title: 'Europa', icon: '🇪🇺' },
-                { title: 'America de Nord', icon: '🌎' },
-                { title: 'America de Sud', icon: '🌏' },
-                { title: 'Asia', icon: '🏯' },
-                { title: 'Africa', icon: '🌍' },
-                { title: 'Oceania', icon: '🏝️' },
-              ].filter(item => matchesSearch(item.title)).map((item) => (
-                <button
-                  key={item.title}
-                  onClick={() => handleAction(item.title)}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-neutral-300 hover:text-white hover:bg-neutral-900 transition text-left cursor-pointer group"
-                >
-                  <span className="flex items-center gap-2.5 font-medium">
-                    <span>{item.icon}</span>
-                    <span>{item.title}</span>
-                  </span>
-                  <ChevronRight className="w-3.5 h-3.5 text-neutral-600 group-hover:text-rose-400 transition" />
-                </button>
-              ))}
-            </div>
-
-            {/* SECTION 12: PLATFORMĂ */}
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider px-3 py-1">
-                Platformă
-              </p>
-              {[
-                { title: 'Feed de activitate', icon: '⚡' },
-                { title: 'Social', icon: '💬' },
-                { title: 'Hub AI', icon: '🧠', action: 'studio' },
-                { title: 'Strat Edge', icon: '🌐' },
-                { title: 'Planuri Premium', icon: '👑' },
-                { title: 'Conținut minat', icon: '⛏️', action: 'miner' },
-              ].filter(item => matchesSearch(item.title)).map((item) => (
-                <button
-                  key={item.title}
-                  onClick={() => handleAction(item.title, item.action)}
+                  onClick={() => handleAction(item.title, item.action, item)}
                   className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-neutral-300 hover:text-white hover:bg-neutral-900 transition text-left cursor-pointer group"
                 >
                   <span className="flex items-center gap-2.5 font-medium">
@@ -435,42 +392,19 @@ export const RightSidebarDrawer: React.FC<RightSidebarDrawerProps> = ({
           <div className="p-4 border-t border-neutral-800 bg-neutral-950 flex flex-col gap-2">
             <button
               onClick={() => {
-                onOpenStudio();
+                if (onOpenProfileModal) onOpenProfileModal();
                 onClose();
               }}
               className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-600 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-rose-600/30 transition cursor-pointer text-center"
             >
-              Conectare / Creează cont
+              Gestionează Cont / Profil
             </button>
             <p className="text-[10px] text-center text-neutral-500 font-mono">
-              Animaxia Universal v3.0 · 100% Local End-to-End
+              Animaxia Universal v3.0 · Toate meniurile sunt 100% reale
             </p>
           </div>
         </div>
       </div>
-
-      {/* Feature Preview Modal for AI Suite Tools */}
-      {activeFeatureModal && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-sm bg-neutral-900 border border-neutral-800 rounded-2xl p-6 shadow-2xl text-center space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 mx-auto flex items-center justify-center text-xl">
-              ✨
-            </div>
-            <div>
-              <h3 className="font-bold text-base text-white">{activeFeatureModal}</h3>
-              <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
-                Modulul este activ și conectat la nucleul Animaxia AI Suite. Metadatele și fluxul sunt sincronizate continuu.
-              </p>
-            </div>
-            <button
-              onClick={() => setActiveFeatureModal(null)}
-              className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs cursor-pointer transition"
-            >
-              Închide
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

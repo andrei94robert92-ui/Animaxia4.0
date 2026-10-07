@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   X, Database, Plus, Trash2, Download, Upload, RotateCcw,
-  Film, Video, Server, HardDrive, CheckCircle2, AlertCircle, FileJson
+  Film, Video, Server, HardDrive, CheckCircle2, AlertCircle, FileJson, Edit3
 } from 'lucide-react';
 import { Anime, DatabaseStats } from '../types/anime';
 import { api } from '../services/api';
@@ -20,6 +20,7 @@ export const AdminStudioModal: React.FC<AdminStudioModalProps> = ({
   const [stats, setStats] = useState<DatabaseStats | null>(null);
   const [activeTab, setActiveTab] = useState<'stats' | 'new_anime' | 'new_episode' | 'manage_catalog' | 'backup'>('stats');
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [editingAnimeId, setEditingAnimeId] = useState<string | null>(null);
 
   // New Anime Form State
   const [newTitle, setNewTitle] = useState('');
@@ -60,13 +61,31 @@ export const AdminStudioModal: React.FC<AdminStudioModalProps> = ({
     }
   };
 
-  const handleCreateAnime = async (e: React.FormEvent) => {
+  const handleStartEdit = (anime: Anime) => {
+    setEditingAnimeId(anime.id);
+    setNewTitle(anime.title);
+    setNewRomaji(anime.romajiTitle || '');
+    setNewEnglish(anime.englishTitle || '');
+    setNewDescription(anime.description || '');
+    setNewCover(anime.coverImage || '');
+    setNewBanner(anime.bannerImage || '');
+    setNewGenres(anime.genres ? anime.genres.join(', ') : 'Acțiune');
+    setNewStudio(anime.studio || 'Studio');
+    setNewYear(anime.releaseYear || 2024);
+    setNewSeason((anime.season as any) || 'Iarnă');
+    setNewStatus((anime.status as any) || 'În difuzare');
+    setNewAge(anime.ageRating || '16+');
+    setIsFeatured(!!anime.featured);
+    setActiveTab('new_anime');
+  };
+
+  const handleSaveAnime = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
 
     try {
       const genresArray = newGenres.split(',').map((g) => g.trim()).filter(Boolean);
-      await api.createAnime({
+      const payload: Partial<Anime> = {
         title: newTitle.trim(),
         romajiTitle: newRomaji.trim() || newTitle.trim(),
         englishTitle: newEnglish.trim() || newTitle.trim(),
@@ -80,12 +99,22 @@ export const AdminStudioModal: React.FC<AdminStudioModalProps> = ({
         status: newStatus,
         ageRating: newAge,
         featured: isFeatured,
-        rating: 9.0,
-        totalRatings: 1,
-        episodes: [],
-      });
+      };
 
-      setStatusMessage({ text: `Anime-ul "${newTitle}" a fost salvat cu succes în baza de date locală!`, type: 'success' });
+      if (editingAnimeId) {
+        await api.updateAnime(editingAnimeId, payload);
+        setStatusMessage({ text: `Anime-ul "${newTitle}" a fost actualizat cu succes în baza de date!`, type: 'success' });
+      } else {
+        await api.createAnime({
+          ...payload,
+          rating: 9.0,
+          totalRatings: 1,
+          episodes: [],
+        });
+        setStatusMessage({ text: `Anime-ul "${newTitle}" a fost salvat cu succes în baza de date locală!`, type: 'success' });
+      }
+
+      setEditingAnimeId(null);
       setNewTitle('');
       setNewRomaji('');
       setNewEnglish('');
@@ -95,7 +124,7 @@ export const AdminStudioModal: React.FC<AdminStudioModalProps> = ({
       onCatalogChanged();
       loadStats();
     } catch (err: any) {
-      setStatusMessage({ text: err.message || 'Eroare la adăugarea anime-ului.', type: 'error' });
+      setStatusMessage({ text: err.message || 'Eroare la salvarea anime-ului.', type: 'error' });
     }
   };
 
@@ -332,9 +361,29 @@ export const AdminStudioModal: React.FC<AdminStudioModalProps> = ({
             </div>
           )}
 
-          {/* TAB 2: NEW ANIME */}
+          {/* TAB 2: NEW / EDIT ANIME */}
           {activeTab === 'new_anime' && (
-            <form onSubmit={handleCreateAnime} className="space-y-4">
+            <form onSubmit={handleSaveAnime} className="space-y-4">
+              {editingAnimeId && (
+                <div className="p-3 bg-amber-950/40 border border-amber-800/80 rounded-xl flex items-center justify-between text-xs text-amber-300">
+                  <span>Mod editare activ pentru: <strong>{newTitle}</strong></span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingAnimeId(null);
+                      setNewTitle('');
+                      setNewRomaji('');
+                      setNewEnglish('');
+                      setNewDescription('');
+                      setNewCover('');
+                      setNewBanner('');
+                    }}
+                    className="text-xs text-neutral-400 hover:text-white underline cursor-pointer"
+                  >
+                    Anulează editarea
+                  </button>
+                </div>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-semibold text-neutral-300 block mb-1">
@@ -467,7 +516,7 @@ export const AdminStudioModal: React.FC<AdminStudioModalProps> = ({
                 type="submit"
                 className="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs uppercase tracking-wider transition cursor-pointer shadow-lg shadow-rose-600/20"
               >
-                Salvează Anime în Baza de Date Locală
+                {editingAnimeId ? 'Actualizează Titlul în Baza de Date' : 'Salvează Anime în Baza de Date Locală'}
               </button>
             </form>
           )}
@@ -595,6 +644,14 @@ export const AdminStudioModal: React.FC<AdminStudioModalProps> = ({
                   </div>
 
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleStartEdit(anime)}
+                      className="px-2.5 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-xs font-medium text-amber-300 hover:text-amber-200 flex items-center gap-1 cursor-pointer"
+                      title="Editează titlul"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Editează</span>
+                    </button>
                     <button
                       onClick={() => {
                         setSelectedAnimeId(anime.id);
